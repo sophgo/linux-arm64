@@ -1,0 +1,26 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684x_evb.dtsi"
+
+/ {
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+
+};
+
+#if 0
+// workaround for forcing speed to 100M
+&ethernet0 {
+	max-speed = <100>;
+	eth-sophgo-config {
+		autoneg = "disable";
+	};
+};
+
+&ethernet1 {
+	max-speed = <100>;
+	eth-sophgo-config {
+		autoneg = "disable";
+	};
+};
+#endif

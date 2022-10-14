@@ -1,0 +1,132 @@
+#
+# Bitmain SoC drivers
+#
+
+if ARCH_BITMAIN
+menu "Sophon SoC drivers"
+
+config ARCH_BM1684
+	bool "Sophon BM1684 SoC"
+	select PINCTRL
+	select GENERIC_PINCONF
+	select COMMON_CLK
+	select RESET_CONTROLLER
+	select MFD_SYSCON
+        select PWM
+	select PWM_SYSFS
+	select WATCHDOG
+	select DW_WATCHDOG
+	select DW_APB_TIMER
+	select DW_APB_TIMER_OF
+	select DMADEVICES
+	select DMA_SHARED_BUFFER
+	select PCI
+	select PCIE_DW
+	select PCIE_DW_HOST
+	select MMC
+	select MMC_SDHCI
+	select MMC_SDHCI_PLTFM
+	select STMMAC_ETH
+	select STMMAC_PLATFORM
+	select STMMAC_SELFTESTS
+	select I2C
+	select I2C_CHARDEV
+	select I2C_DESIGNWARE_CORE
+	select I2C_DESIGNWARE_PLATFORM
+	select GPIOLIB
+	select GPIO_SYSFS
+	select GPIO_DWAPB
+	select HWSPINLOCK
+	select SERIAL_8250
+	select SERIAL_8250_CONSOLE
+	select SERIAL_8250_DW
+	select HW_RANDOM_DWC_CLP890
+	select CRYPTO
+	select CRYPTO_HW
+	select CRYPTO_AES
+	select CRYPTO_DES
+	select CRYPTO_HASH
+	select CRYPTO_BLKCIPHER
+	select CRYPTO_ENGINE
+	select CRYPTO_DEV_DWC_PKA
+	help
+	  This enables support for BM1684
+
+config BM_MCU
+	bool "Bitmain MCU i2c driver"
+	default n
+	help
+	  Unified MCU driver. It contains MCU misc functions.
+
+config BM_MCU_WATCHDOG
+	bool "Bitmain I2C based watchdog"
+	default n
+	depends on WATCHDOG && WATCHDOG_CORE
+	help
+	  Bitmain I2C based watchdog.
+	  We call it dummy not because it is not a physicall device, but it is
+	  emulated by an MCU. It can maintain a software down counter and
+	  auto-reload register. And can can reset SoC in real. I take SA5 in
+	  an example. SA5's SoC is bm1684 and its associated MCU is STM32L073xx
+	  STM32 uses its i2c controller as slave mode, a special slave address
+	  is bind to this watchdog software instance running on STM32. It act
+	  as a real watchdog. STM32 can accept multiple slave address
+	  transactions at one time. MCU other services should pick another slave
+	  address. bm1684 act as an i2c master, with this driver, in linux
+	  system, STM32 looks like a standard watchdog device.
+
+config BM_MCU_EEPROM
+	bool "Bitmain I2C based EEPROM"
+	default n
+	select NVMEM
+	help
+	  Bitmain I2C based EEPROM.
+	  This EEPROM is simulated by an STM32 MCU.
+	  It supports random-read and random-write with any size.
+	  I2C clock stretching should be supported by i2c master.
+	  It takes time duing read or write from MCU EEPROM.
+
+config BM_MCU_KEYPAD
+	bool "Bitmain I2C based keypad"
+	default n
+	depends on INPUT_MATRIXKMAP
+	help
+	  Bitmain I2C based keypad.
+	  This virtual keypad is used to send some event to SoC
+	  eg. motherboard power key event, reset event...
+	  This device is emulated by STM32 linked on SoC i2c bus.
+	  But its key event may get from another device located at motherboard.
+	  After virtual key event is read from STM32, you should acknowledge STM32
+	  to make sure no event will be lost. Measuring time key pressed is not
+	  supported by this device.
+
+config BM_MCU_PIC
+	bool "PIC device driver for SE5 motherboard"
+	default n
+	help
+	  PIC device driver for SE5 motherboard.
+	  Not all functions are implemented here, because some of functions are
+	  used by STM32 for controling devices on motherboard, like setup
+	  temperature of SoC, heater control, key events get etc. PIC i2c
+	  transactions are derived though STM32.
+
+config BM_WATCHDOG
+       bool "Bitmain watchdog framework"
+       default n
+       help
+	Strict mode implementation.
+
+config BMPERF_BM1684
+	tristate "performance monitor for AXI/TPU/GDMA"
+	default m
+	help
+	  bm performance monitor module.
+
+config BM_CPU_DRV
+	tristate "enable a53 when PCIe mode"
+	default n
+	help
+	  PCIe mode use a53 by this driver.
+
+endmenu
+endif # ARCH_BITMAIN

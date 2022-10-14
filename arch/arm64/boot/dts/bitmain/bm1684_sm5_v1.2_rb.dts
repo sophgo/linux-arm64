@@ -1,0 +1,17 @@
+#include "bm1684_sm5_v1.1_rb.dts"
+
+&soc_tpuclk440m_trip {
+	temperature = <95000>;
+};
+
+&soc_tpuclk75m_trip {
+	temperature = <105000>;
+};
+
+&soc_crit_trip {
+	temperature = <110000>;
+};
+
+&clp890 {
+	status = "disabled";
+};

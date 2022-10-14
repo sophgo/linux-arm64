@@ -1,0 +1,9 @@
+config REALTEK_R8125
+	tristate "RealTek 8125 gigabit ethernet sipport"
+    depends on PCI
+	default y
+	---help---
+		Say Y here if you have a Realtek 8125 PCI Gigabit Ethernet adapter.
+
+		To compile this driver as a module, choose M here: the module
+		will be called r8125.  This is recommended.

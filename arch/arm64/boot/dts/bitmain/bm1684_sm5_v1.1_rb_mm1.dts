@@ -1,0 +1,13 @@
+#include "bm1684_sm5_v1.1_rb.dts"
+
+&vpu_reserved {
+	reg = <0x3 0x38000000 0x0 0x08000000>; // 128M, for VPU firmware
+};
+
+&ion_for_vpu {
+	reg = <0x3 0x40000000 0x0 0xC0000000>; // 3G, for VPU
+};
+
+&ion_for_vpp {
+	reg = <0x4 0x80000000 0x0 0x80000000>; // 2G, for VPP/JPU
+};

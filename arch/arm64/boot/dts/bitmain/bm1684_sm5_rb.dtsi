@@ -1,0 +1,174 @@
+#include <dt-bindings/input/input.h>
+
+&i2c1 {
+	/delete-node/ tmp451@4c;
+
+	tmp451: tmp451@6b {
+		compatible = "ti,tmp451";
+		reg = <0x6b>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	bm16xxwdt@69 {
+		compatible = "bitmain,bm16xx-wdt";
+		reg = <0x69>;
+		flavor = "strict";
+	};
+
+	bm16xxeeprom@6a {
+		compatible = "bitmain,bm16xx-eeprom";
+		reg = <0x6a>;
+		size = <3072>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		sn: sn@0000 {
+			reg = <0x0000 17>;
+		};
+		mac0: mac0@0020 {
+			reg = <0x0020 6>;
+		};
+		mac1: mac1@0040 {
+			reg = <0x0040 6>;
+		};
+	};
+
+	bm16xxmcu@17 {
+		compatible = "bitmain,bm16xx-mcu";
+		reg = <0x17>;
+
+		nvmem-cells = <&sn>, <&mac0>, <&mac1>;
+		nvmem-cell-names = "sn", "mac0", "mac1";
+	};
+};
+
+&i2c2 {
+	pinctrl-names = "default", "dbgi2c";
+	pinctrl-0 = <&i2c2_acquire &dbgi2c_release>;
+
+	rtc@68 {
+		compatible = "dallas,ds1307";
+		reg = <0x68>;
+	};
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart2_acquire>;
+};
+
+&tach0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&fan0_acquire>;
+};
+
+&tach1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&fan1_acquire>;
+};
+
+&thermal_zones {
+	soc {
+		trips {
+			soc_pwmfan_trip0: soc_pwmfan_trip@0 {
+				temperature = <30000>; /* millicelsius */
+				hysteresis = <10000>; /* millicelsius */
+				type = "active";
+			};
+
+			soc_pwmfan_trip1: soc_pwmfan_trip@1 {
+				temperature = <53000>; /* millicelsius */
+				hysteresis = <8000>; /* millicelsius */
+				type = "active";
+			};
+
+			soc_pwmfan_trip2: soc_pwmfan_trip@2 {
+				temperature = <65000>; /* millicelsius */
+				hysteresis = <12000>; /* millicelsius */
+				type = "active";
+			};
+
+			soc_pwmfan_trip3: soc_pwmfan_trip@3 {
+				temperature = <75000>; /* millicelsius */
+				hysteresis = <10000>; /* millicelsius */
+				type = "active";
+			};
+
+			soc_pwmfan_trip4: soc_pwmfan_trip@4 {
+				temperature = <80000>; /* millicelsius */
+				hysteresis = <5000>; /* millicelsius */
+				type = "active";
+			};
+		};
+
+		cooling-maps {
+			map3 {
+				trip = <&soc_pwmfan_trip0>;
+				cooling-device = <&pwmfan 0 1>;
+			};
+
+			map4 {
+				trip = <&soc_pwmfan_trip1>;
+				cooling-device = <&pwmfan 1 2>;
+			};
+
+			map5 {
+				trip = <&soc_pwmfan_trip2>;
+				cooling-device = <&pwmfan 2 3>;
+			};
+
+			map6 {
+				trip = <&soc_pwmfan_trip3>;
+				cooling-device = <&pwmfan 3 4>;
+			};
+
+			map7 {
+				trip = <&soc_pwmfan_trip4>;
+				cooling-device = <&pwmfan 4 5>;
+			};
+		};
+	};
+};
+
+/ {
+	pwmfan: pwm-fan {
+		compatible = "pwm-fan";
+		pwms = <&pwm 0 40000>, <&pwm 1 40000>; // period_ns
+		pwm-names = "pwm0","pwm1";
+		pwm_inuse = "pwm0";
+		#cooling-cells = <2>;
+		cooling-levels = <255 153 128 77 26 1>;  //total 255
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+
+		gpio5 {
+			label = "gpio5";
+			gpios = <&port0a 5 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio6 {
+			label = "gpio6";
+			gpios = <&port0a 6 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		gpio7 {
+			label = "GPIO Key Up";
+			linux,code = <KEY_UP>;
+			gpios = <&port0a 7 GPIO_ACTIVE_HIGH>;
+		};
+
+		gpio30 {
+			label = "GPIO Key DOWN";
+			linux,code = <KEY_DOWN>;
+			gpios = <&port0a 30 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};

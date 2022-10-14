@@ -1,0 +1,29 @@
+#include "bm1684.dtsi"
+#include "bm1684_mm_8g.dtsi"
+#include "bm1684_sm5_rb.dtsi"
+
+&i2c1 {
+	/delete-node/ tmp451@6b;
+
+	tmp451: tmp451@4c {
+		compatible = "ti,tmp451";
+		reg = <0x4c>;
+		#thermal-sensor-cells = <1>;
+	};
+};
+
+&soc_tpuclk440m_trip {
+	temperature = <95000>;
+};
+
+&soc_tpuclk75m_trip {
+	temperature = <105000>;
+};
+
+&soc_crit_trip {
+	temperature = <110000>;
+};
+
+&clp890 {
+	status = "disabled";
+};

@@ -1,0 +1,102 @@
+/ {
+	dram: memory {
+		reg = <0x1 0x0 0x1 0x0>, // 4G
+		      <0x3 0x0 0x0 0x80000000>, // 2G
+		      <0x4 0x0 0x0 0x80000000>; // 2G
+		device_type = "memory";
+	};
+
+	rsvm: reserved-memory {
+		#address-cells = <0x2>;
+		#size-cells = <0x2>;
+		ranges;
+
+		armfw_reserved: armfw_mem {
+			reg = <0x1 0x0 0x0 0x1000000>; // 16M
+			no-map;
+		};
+
+		arm_reserved: arm_mem {
+			reg = <0x1 0x01000000 0x0 0x4000000>; // 64M
+			no-map;
+		};
+
+		smmu_reserved: smmu_mem {
+			reg = <0x1 0x05000000 0x0 0x100000>; // 1M
+			no-map;
+		};
+
+		/*
+		 * as far as we know, kernel will try to alloc following buffers
+		 * in the first 4GB memory region:
+		 * 1. IO_TLB_DEFAULT_SIZE (64MB)
+		 * 2. crashkernel (64MB)
+		 * 3. bootmem (64B, but may acturally occupies 4KB)
+		 * so NPU could not use the entire first 4GB (or 2GB, single rank).
+		 * here we only reserved 64+1 MB as we have assigned crashkernel as
+		 * 64MB@0x310000000, in u-boot's othbootargs.
+		 * update: after modified swiotlb and bootmem allocation, we do not
+		 * need reserve these memory in the first 4GB now.
+		 */
+		ion_for_npu: ion_npu_mem {
+			compatible = "npu-region";
+			reg = <0x1 0x05100000 0x0 0x7AF00000>; // 1.92G
+		};
+
+		bl31_reserved: bl31_mem {
+			reg = <0x3 0x0 0x0 0x40000>; // 256K
+			no-map;
+		};
+
+		// 0x310000000 - 0x314000000 is for crash kernel
+
+		last_kmsg: ramoops_mem {
+			compatible = "ramoops";
+			reg = <0x3 0x14000000 0x0 0x00100000>;
+			record-size = <0x00020000>;
+			console-size = <0x00020000>;
+		};
+
+		cma_reserved: linux,cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x08000000>; // 128MB
+			alignment = <0x0 0x2000>; // 8KB
+			linux,cma-default;
+		};
+
+		vpu_reserved: vpu_mem {
+			reg = <0x3 0x20000000 0x0 0x08000000>; // 128M, for VPU firmware
+			no-map;
+		};
+
+		ion_for_vpu: ion_vpu_mem {
+			compatible = "vpu-region";
+			reg = <0x3 0x40000000 0x0 0x40000000>; // 1G, for VPU
+		};
+
+		ion_for_vpp: ion_vpp_mem {
+			compatible = "vpp-region";
+			reg = <0x4 0x20000000 0x0 0x60000000>; // 1.5G, for VPP/JPU
+		};
+	};
+
+	bitmain-ion {
+		compatible = "bitmain,bitmain-ion";
+
+		ion_heap0: heap_carveout@0 {
+			compatible = "bitmain,carveout_npu";
+			memory-region = <&ion_for_npu>;
+		};
+
+		ion_heap1: heap_carveout@1 {
+			compatible = "bitmain,carveout_vpp";
+			memory-region = <&ion_for_vpp>;
+		};
+
+		ion_heap2: heap_carveout@2 {
+			compatible = "bitmain,carveout_vpu";
+			memory-region = <&ion_for_vpu>;
+		};
+	};
+};

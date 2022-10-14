@@ -1,0 +1,7 @@
+Package: sophgo-bsp-tools
+Source: sophgo-bsp-tools
+Version: 1.0.0
+Architecture: arm64
+Maintainer: sophgo
+Priority: optional
+Description: This is a collection of BSP tools for Sophgo SoCs.

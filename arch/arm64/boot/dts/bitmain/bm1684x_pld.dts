@@ -1,0 +1,28 @@
+#include "bm1684.dtsi"
+#include "bm1684_mm_12g.dtsi"
+
+&uart0 {
+	clock-frequency = <153600>;
+};
+
+&ethernet0 {
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
+};
+
+&ethernet1 {
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
+};
+
+/ {
+	chosen {
+		bootargs = "console=ttyS0,9600 earlycon";
+	};
+
+};
+

@@ -1,0 +1,18 @@
+/ {
+	dram: memory {
+		reg = <0x00 0x00000000 0x4 0x00000000>;
+		device_type = "memory";
+	};
+
+	rsvm: reserved-memory {
+		#address-cells = <0x2>;
+		#size-cells = <0x2>;
+		ranges;
+
+		/* DDR0 2-4G for dataset.bin */
+		rxu_dataset_reserved: rxu_dataset_mem {
+			reg = <0x00 0x40000000 0x00000000 0xc0000000>;
+			no-map;
+		};
+	};
+};

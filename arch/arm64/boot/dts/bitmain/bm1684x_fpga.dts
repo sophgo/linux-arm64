@@ -1,0 +1,65 @@
+#include "bm1684.dtsi"
+
+&uart0 {
+	clock-frequency = <25000000>;
+};
+
+&ethernet0 {
+	max-speed = <100>;
+	status = "disabled";
+	//fpga tx clk only support 25M, speed up to 100M
+	//so disable the autoneg function
+	eth-fpga-config {
+		autoneg = "disable";
+	};
+};
+
+&ethernet1 {
+	max-speed = <100>;
+	status = "disabled";
+	//fpga tx clk only support 25M, speed up to 100M
+	//so disable the autoneg function
+	eth-fpga-config {
+		autoneg = "disable";
+	};
+};
+
+/ {
+	cpus {
+		cpu-map {
+			cluster0 {
+				/delete-node/ core1;
+				/delete-node/ core2;
+				/delete-node/ core3;
+			};
+
+			cluster1 {
+				/delete-node/ core1;
+				/delete-node/ core2;
+				/delete-node/ core3;
+			};
+		};
+
+		/delete-node/ cpu@1;
+		/delete-node/ cpu@2;
+		/delete-node/ cpu@3;
+		/delete-node/ cpu@101;
+		/delete-node/ cpu@102;
+		/delete-node/ cpu@103;
+	};
+
+	clocks {
+		/delete-node/  default_rates;
+	};
+
+	dram: memory {
+		reg = <0x4 0x0 0x1 0x0>; // 4G
+		device_type = "memory";
+	};
+
+	/delete-node/ vpp@50070000;
+	/delete-node/ jpu@50030000;
+	/delete-node/ vpu@50050000;
+	/delete-node/ bmtpu;
+};
+

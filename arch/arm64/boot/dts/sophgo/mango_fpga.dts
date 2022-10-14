@@ -1,0 +1,39 @@
+#include "mango.dtsi"
+#include "mango_mm_16g.dtsi"
+
+&uart1 {
+	clock-frequency = <20275200>;
+};
+
+&uart2 {
+	clock-frequency = <20275200>;
+
+	dmas = <&sysdma 5 1 1
+		&sysdma 4 1 1>;
+	dma-names = "rx", "tx";
+};
+
+/ {
+	cpus {
+		cpu-map {
+			cluster0 {
+				/delete-node/ core1;
+				/delete-node/ core2;
+				/delete-node/ core3;
+			};
+
+			cluster1 {
+				/delete-node/ core1;
+				/delete-node/ core2;
+				/delete-node/ core3;
+			};
+		};
+
+		/delete-node/ cpu@1;
+		/delete-node/ cpu@2;
+		/delete-node/ cpu@3;
+		/delete-node/ cpu@101;
+		/delete-node/ cpu@102;
+		/delete-node/ cpu@103;
+	};
+};

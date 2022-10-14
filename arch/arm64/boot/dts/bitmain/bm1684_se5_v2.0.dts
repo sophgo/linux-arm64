@@ -1,0 +1,85 @@
+#include "bm1684.dtsi"
+#include "bm1684_mm_12g.dtsi"
+#include "bm1684_se5.dtsi"
+
+/ {
+	i2c@5001C000 {
+		/delete-node/ bm16xxpic@6e;
+	};
+
+	fl2000-custom {
+		compatible = "fl2000-custom";
+		hpd-gpio = <&port0a 30 GPIO_ACTIVE_LOW>;
+	};
+
+	gpio-leds {
+		/delete-node/ gpio5;
+		/delete-node/ gpio6;
+
+		gpio7 {
+			label = "gpio7";
+			gpios = <&port0a 7 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	gpio-keys {
+		/delete-node/ gpio7;
+		/delete-node/ gpio30;
+
+		gpio5 {
+			label = "GPIO Key Up";
+			linux,code = <KEY_UP>;
+			gpios = <&port0a 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		gpio6 {
+			label = "GPIO Key DOWN";
+			linux,code = <KEY_DOWN>;
+			gpios = <&port0a 6 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	/delete-node/ fan_speed-0@50029020;
+	/delete-node/ fan_speed-1@50029020;
+};
+
+&ethernet0 {
+	phy-wol = "support";
+};
+
+&thermal_zones {
+	soc {
+		trips {
+			/delete-node/ soc_pwmfan_trip@0;
+			/delete-node/ soc_pwmfan_trip@1;
+			/delete-node/ soc_pwmfan_trip@2;
+			/delete-node/ soc_pwmfan_trip@3;
+			/delete-node/ soc_pwmfan_trip@4;
+		};
+
+		cooling-maps {
+			/delete-node/ map3;
+			/delete-node/ map4;
+			/delete-node/ map5;
+			/delete-node/ map6;
+			/delete-node/ map7;
+		};
+	};
+};
+
+&soc_tpuclk440m_trip {
+	temperature = <95000>;
+};
+
+&soc_tpuclk75m_trip {
+	temperature = <105000>;
+};
+
+&soc_crit_trip {
+	temperature = <110000>;
+};
+
+&clp890 {
+	status = "disabled";
+};

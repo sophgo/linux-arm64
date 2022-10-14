@@ -1,0 +1,73 @@
+#include "bm1684.dtsi"
+#include "bm1684x_clock.dtsi"
+
+/ {
+	tsdma@0x0200B000 {
+		compatible = "snps,dmac-bm";
+		reg = <0x0 0x0200B000 0x0 0x1000>;
+		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&div_clk GATE_CLK_TSDMA>;
+		clock-names = "tsdmaclk";
+		dma-channels = /bits/ 8 <8>;
+		#dma-cells = <3>;
+		dma-requests = /bits/ 8 <16>;
+		chan_allocation_order = /bits/ 8 <0>;
+		chan_priority = /bits/ 8 <0>;
+		block_size = <32>; /* max 32 data items */
+		dma-masters = /bits/ 8 <2>;
+		data-width = <1 1>; /* bytes */
+		axi_tr_width = <4>; /* bytes */
+		block-ts = <31>;
+	};
+
+	m2m@0{
+		compatible = "sophgo,m2m-dma";
+	};
+};
+
+
+
+&tpu {
+	reg = <0x0 0x900c000 0x0 0x80000>,
+		<0x0 0x50000000 0x0 0x300000>,
+		<0x0 0x58000000 0x0 0x10000>;
+
+	clocks = <&div_clk GATE_CLK_TPU>,
+		<&div_clk GATE_CLK_GDMA>,
+		<&div_clk GATE_CLK_AXI8_CDMA>,
+		<&div_clk GATE_CLK_AXI8_MMU>,
+		<&div_clk GATE_CLK_AXI8_PCIE>,
+		<&div_clk GATE_CLK_FIXED_TPU_CLK>,
+		<&div_clk GATE_CLK_APB_INTC>,
+		<&div_clk GATE_CLK_ARM>,
+		<&div_clk GATE_CLK_AXISRAM>,
+		<&div_clk GATE_CLK_HAU_NGS>,
+		<&div_clk GATE_CLK_TPU_FOR_TPU_ONLY>;
+
+	clock-names = "tpu",
+		"gdma",
+		"axi8_cdma",
+		"axi8_mmu",
+		"axi8_pcie",
+		"fixed_tpu_clk",
+		"apb_intc",
+		"arm9",
+		"axi_sram",
+		"clk_gate_hau_ngs",
+		"clk_gate_tpu_for_tpu_only";
+};
+
+&vpp {
+	reg = <0x0 0x50070000 0x0 0x1000>,//sys0 vpp base
+	      <0x0 0x500f0000 0x0 0x1000>;//sys1 vpp base
+	interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>, //system0 vpp 62-32=30
+		     <GIC_SPI 126 IRQ_TYPE_LEVEL_HIGH>; //system1 vpp 158-32=126
+	resets = <&rst RST_VIDEO_SYSTEM_0_VPP>,
+		 <&rst RST_VIDEO_SYSTEM_1_VPP>;
+	reset-names = "vpp0",
+		      "vpp1";
+};
+&bce {
+	compatible = "bitmain,crypto-engine,v2";
+	reg = <0x00000000 0x12008000 0x00000000 0x00001000>;
+};

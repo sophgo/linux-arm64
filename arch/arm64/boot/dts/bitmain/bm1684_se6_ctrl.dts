@@ -1,0 +1,93 @@
+#include "bm1684.dtsi"
+#include "bm1684_mm_12g.dtsi"
+#include "bm1684_sm5_rb.dtsi"
+
+/{
+	/delete-node/ bitmain-ion; // delete ion
+	/delete-node/ bmtpu; // delete tpu
+	/delete-node/ vpp@50070000; // delete vpp
+	/delete-node/ jpu@50030000; // delete jpu
+	/delete-node/ vpu@50050000; // delete vpu
+};
+
+/delete-node/ &ion_for_npu; // delete npu
+/delete-node/ &ion_for_vpp; // delete vpp
+/delete-node/ &ion_for_vpu; // delete vpu
+/delete-node/ &vpu_reserved; // delete vpu_reserved
+
+&i2c1 {
+	bm16xxeeprom@6f {
+	    compatible = "bitmain,bm16xx-eeprom";
+	    reg = <0x6f>;
+	    size = <256>;
+
+	    #address-cells = <1>;
+	    #size-cells = <1>;
+
+	    se6_sn: sn@0000 {
+		    reg = <0x0000 17>;
+	    };
+
+	    se6ctrl_sn: sn@0020 {
+		    reg = <0x0020 17>;
+	    };
+	};
+
+	bm16xx-virtual-kaypad@6d {
+		compatible = "bitmain,bm16xx-virtual-keypad";
+		reg = <0x6d>;
+		keypad,num-rows = <1>;
+		keypad,num-columns = <8>;
+		linux,keymap =
+			<
+			MATRIX_KEY(0x00, 0x00, KEY_POWER)
+			MATRIX_KEY(0x00, 0x01, KEY_RESTART)
+			MATRIX_KEY(0x00, 0x02, KEY_FN_F1)
+			MATRIX_KEY(0x00, 0x03, BTN_3)
+			MATRIX_KEY(0x00, 0x04, BTN_4)
+			MATRIX_KEY(0x00, 0x05, BTN_5)
+			MATRIX_KEY(0x00, 0x06, BTN_6)
+			MATRIX_KEY(0x00, 0x07, BTN_7)
+			>;
+	};
+};
+
+&pwm{
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_acquire>;
+
+};
+
+&pwmfan {
+	status = "disabled";
+};
+
+&i2c1 {
+	/delete-node/ tmp451@6b;
+
+	tmp451: tmp451@4c {
+		compatible = "ti,tmp451";
+		reg = <0x4c>;
+		#thermal-sensor-cells = <1>;
+	};
+};
+
+&thermal_zones {
+	soc {
+		trips {
+			/delete-node/ soc_pwmfan_trip@0;
+			/delete-node/ soc_pwmfan_trip@1;
+			/delete-node/ soc_pwmfan_trip@2;
+			/delete-node/ soc_pwmfan_trip@3;
+			/delete-node/ soc_pwmfan_trip@4;
+		};
+
+		cooling-maps {
+			/delete-node/ map3;
+			/delete-node/ map4;
+			/delete-node/ map5;
+			/delete-node/ map6;
+			/delete-node/ map7;
+		};
+	};
+};

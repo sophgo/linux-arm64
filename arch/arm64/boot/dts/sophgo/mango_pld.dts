@@ -1,0 +1,49 @@
+#include "mango.dtsi"
+#include "mango_mm_16g.dtsi"
+
+&uart0 {
+	clock-frequency = <153600>;
+};
+
+&uart1 {
+	clock-frequency = <153600>;
+};
+
+&fixed_clk32khz {
+	clock-frequency = <800>; // align with SYS_COUNTER_FREQ_IN_TICKS in TFA
+};
+
+/ {
+	chosen {
+		bootargs = "console=ttyS1,9600 earlycon";
+	};
+};
+
+/ {
+	/delete-node/ pmu_a53;
+	/delete-node/ bitmain,bm-cpufreq;
+	/delete-node/ dw-apb-timer0@7030003000;
+	/delete-node/ gpio@7030009000;
+	/delete-node/ gpio@703000A000;
+	/delete-node/ gpio@703000B000;
+	/delete-node/ gpio_intr@0;
+	/delete-node/ spinlock;
+	/delete-node/ efuse@7030000000;
+	/delete-node/ pwm@703000C000;
+	/delete-node/ tach@703000C020;
+	/delete-node/ tach@703000C028;
+	/delete-node/ bm-wd@7030004000;
+	/delete-node/ ethernet@7040026000;
+	/delete-node/ top_intc;
+	/delete-node/ pcie@7060000000;
+	/delete-node/ rtc@7030002000;
+	/delete-node/ spi@7040004000;
+	/delete-node/ fau@0x70b8000000;
+
+	memory {
+		reg = <0x0 0x00000000 0x0 0x40000000>;
+	};
+
+};
+
+

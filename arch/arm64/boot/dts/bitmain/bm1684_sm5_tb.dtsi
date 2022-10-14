@@ -1,0 +1,65 @@
+&ethernet0 {
+	phy-handle = <&phy0>;
+
+	mdio0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "snps,dwmac-mdio";
+		phy0: ethernet-phy@0 {
+			marvell,reg-init = <18 0x14 0 0x0006>,
+					   <18 0x14 0 0x8006>;
+		};
+	};
+};
+
+&i2c1 {
+	/delete-node/ tmp451@4c;
+
+	tmp451: tmp451@6b {
+		compatible = "ti,tmp451";
+		reg = <0x6b>;
+		#thermal-sensor-cells = <1>;
+	};
+
+	bm16xxrtc@68 {
+		compatible = "dallas,ds1307";
+		reg = <0x68>;
+	};
+
+	bm16xxwdt@69 {
+		compatible = "bitmain,bm16xx-wdt";
+		reg = <0x69>;
+		flavor = "strict";
+	};
+
+	bm16xxeeprom@6a {
+		compatible = "bitmain,bm16xx-eeprom";
+		reg = <0x6a>;
+		size = <3072>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		sn: sn@0000 {
+			reg = <0x0000 17>;
+		};
+		mac0: mac0@0020 {
+			reg = <0x0020 6>;
+		};
+		mac1: mac1@0040 {
+			reg = <0x0040 6>;
+		};
+	};
+
+	bm16xxmcu@17 {
+		compatible = "bitmain,bm16xx-mcu";
+		reg = <0x17>;
+
+		nvmem-cells = <&sn>, <&mac0>, <&mac1>;
+		nvmem-cell-names = "sn", "mac0", "mac1";
+	};
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart2_acquire>;
+};

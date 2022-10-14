@@ -1,0 +1,5 @@
+config USB_FL2000
+	tristate "FL2000"
+	default n
+        ---help---
+	This enables FL2000 USB HDMI dongle support.

@@ -1,0 +1,65 @@
+#
+# Sophgo SoC drivers
+#
+
+if ARCH_SOPHGO
+menu "Sophgo SoC drivers"
+
+config ARCH_MANGO
+	bool "Sophgo Mango SoC"
+	select PINCTRL
+	select GENERIC_PINCONF
+	select COMMON_CLK
+	select RESET_CONTROLLER
+	select MFD_SYSCON
+        select PWM
+	select PWM_SYSFS
+	select WATCHDOG
+	select DW_WATCHDOG
+	select DW_APB_TIMER
+	select DW_APB_TIMER_OF
+	select DMADEVICES
+	select PCI
+	select PCIE_CADENCE
+	select I2C
+	select I2C_CHARDEV
+	select I2C_DESIGNWARE_CORE
+	select I2C_DESIGNWARE_PLATFORM
+	select GPIOLIB
+	select GPIO_SYSFS
+	select GPIO_DWAPB
+	select HWSPINLOCK
+	select SERIAL_8250
+	select SERIAL_8250_CONSOLE
+	select SERIAL_8250_DW
+	select RTC_LIB
+	select RTC_CLASS
+	select SPI
+	select SPI_DESIGNWARE
+	select SPI_DW_MMIO
+	help
+	  This enables support for Mango
+
+config PLATFORM_DRIVER_RXU
+	bool "Sophgo RXU Driver"
+	default y if ARCH_MANGO
+	help
+	  Sophgo RXU driver.
+	  It is a accelerator of XMR mining. Key features list below
+	  1. Implements randomX calculation
+	  2. Auto compare difficulty
+	  3. Auto increase nonce
+	  4. Report valid nonce
+
+config PLATFORM_DRIVER_FAU
+	bool "Sophgo FAU Driver"
+	default y if ARCH_MANGO
+	help
+	  Sophgo FAU driver.
+	  It is a accelerator of filecoin mining for P1 step. Key features list below
+	  1. Implements merkel calculation
+	  2. Implements sdr calculation
+
+
+endmenu
+endif # ARCH_SOPHGO

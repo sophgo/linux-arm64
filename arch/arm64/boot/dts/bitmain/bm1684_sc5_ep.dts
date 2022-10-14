@@ -1,0 +1,68 @@
+#include "bm1684.dtsi"
+#include "bm1684_mm_12g.dtsi"
+
+&dram {
+	reg = <0x3 0x0 0x0 0x40000000>; // 1G
+};
+
+/ {
+	/delete-node/ serial@5011A000;
+	/delete-node/ serial@5011C000;
+	/delete-node/ i2c@5001A000;
+	/delete-node/ i2c@5001C000;
+	/delete-node/ i2c@5001E000;
+	/delete-node/ pwm@50029000;
+	/delete-node/ fan_speed@50029020;
+	/delete-node/ aliases;
+	/delete-node/ ethernet@50108000;
+	/delete-node/ ethernet@5010C000;
+	/delete-node/ vpp@50070000;
+	/delete-node/ jpu@50030000;
+	/delete-node/ vpu@50050000;
+	/delete-node/ bm-emmc@50100000;
+	/delete-node/ bm-sd@50101000;
+	/delete-node/ bmtpu;
+	/delete-node/ pcie@5fb80000;
+	/delete-node/ reserved-memory;
+	/delete-node/ bitmain-ion;
+	/delete-node/ thermal-zones;
+	/delete-node/ bm1684_cooling;
+	/delete-node/ bce@58004000;
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+	/delete-node/ stmmac-axi-config;
+	/delete-node/ rx-queues-config;
+	/delete-node/ tx-queues-config;
+	/delete-node/ fan_speed-0@50029020;
+	/delete-node/ fan_speed-1@50029020;
+	/delete-node/ efuse@50028000;
+	/delete-node/ dw-apb-timer0@50022000;
+	/delete-node/ ddr;
+	/delete-node/ top_intc;
+	/delete-node/ tach@50029020;
+	/delete-node/ tach@50029028;
+
+	reserved-memory {
+		#address-cells = <0x2>;
+		#size-cells = <0x2>;
+		ranges;
+
+		bl31_reserved: bl31@300000000 {
+			reg = <0x3 0x0 0x0 0x20000>; // 128K
+			no-map;
+		};
+
+		bmcpu_mem: bmcpu@320000000 {
+			reg = <0x3 0x20000000 0x0 0x1000000>; // 16M
+			no-map;
+		};
+	};
+
+	veth {
+		status = "okay";
+	};
+
+	bmcpu {
+		status = "okay";
+	};
+};
