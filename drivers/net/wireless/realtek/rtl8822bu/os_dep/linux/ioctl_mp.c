@@ -134,7 +134,6 @@ int rtw_mp_write_reg(struct net_device *dev,
 	}
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -282,7 +281,6 @@ int rtw_mp_read_reg(struct net_device *dev,
 	}
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -334,7 +332,6 @@ int rtw_mp_write_rf(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -417,7 +414,6 @@ int rtw_mp_read_rf(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -531,9 +527,7 @@ int rtw_mp_rate(struct net_device *dev,
 	SetDataRate(padapter);
 
 	wrqu->length = strlen(extra);
-
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -573,7 +567,6 @@ int rtw_mp_channel(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -610,7 +603,6 @@ int rtw_mp_ch_offset(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -657,7 +649,6 @@ int rtw_mp_bandwidth(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -738,7 +729,6 @@ int rtw_mp_txpower_index(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -786,7 +776,6 @@ int rtw_mp_txpower(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return 0;
 }
@@ -850,7 +839,6 @@ int rtw_mp_ant_tx(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -909,7 +897,6 @@ int rtw_mp_ant_rx(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -1137,7 +1124,6 @@ int rtw_mp_disable_bt_coexist(struct net_device *dev,
 	}
 
 exit:
-	rtw_mfree(input, wrqu->data.length + 1);
 
 	return ret;
 }
@@ -1310,7 +1296,6 @@ int rtw_mp_arx(struct net_device *dev,
 	wrqu->length = strlen(extra) + 1;
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -1394,7 +1379,6 @@ int rtw_mp_pwrtrk(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -1425,7 +1409,6 @@ int rtw_mp_psd(struct net_device *dev,
 	wrqu->length = mp_query_psd(padapter, extra);
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -1592,7 +1575,6 @@ int rtw_mp_dump(struct net_device *dev,
 	}
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -1658,7 +1640,6 @@ int rtw_mp_phypara(struct net_device *dev,
 	wrqu->length = strlen(extra) + 1;
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -1716,7 +1697,6 @@ int rtw_mp_SetRFPath(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -1775,7 +1755,6 @@ int rtw_mp_switch_rf_path(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length + 1);
 
 	return ret;
 }
@@ -1812,7 +1791,6 @@ int rtw_mp_QueryDrv(struct net_device *dev,
 	wrqu->data.length = strlen(extra) + 1;
 
 exit:
-	rtw_mfree(input, wrqu->data.length);
 
 	return ret;
 }
@@ -1882,7 +1860,6 @@ int rtw_mp_PwrCtlDM(struct net_device *dev,
 	wrqu->length = strlen(extra);
 
 exit:
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
@@ -3124,7 +3101,6 @@ exit:
 
 	wrqu->length = strlen(extra);
 
-	rtw_mfree(input, wrqu->length);
 
 	return ret;
 }
