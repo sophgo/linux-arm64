@@ -9,18 +9,20 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "bm_spi.h"
+#include "dbg_i2c.h"
+#include "mm_io.h"
 
 #define ONE_FIP_SIZE  2097152 // 2MB
 #define ONE_CHIP_SIZE 4194304 // 4MB
 
 #define ALIGN(x, mask)  (((x) + ((mask)-1)) & ~((mask)-1))
 
-long xstrtol(const char *s)
+uint64_t xstrtoll(const char *s)
 {
-	long tmp;
+	uint64_t tmp;
 
 	errno = 0;
-	tmp = strtol(s, NULL, 0);
+	tmp = strtoull(s, NULL, 0);
 	if (!errno)
 		return tmp;
 
@@ -33,18 +35,15 @@ long xstrtol(const char *s)
 	exit(EXIT_FAILURE);
 }
 
-int write_bin_to_flash(char *buf, unsigned long spi_addr_phy, uint32_t offset, int len)
+int write_bin_to_flash(char *buf, uint64_t spi_addr_phy, uint32_t offset, int len)
 {
 	int ret = 0;
 	void *spi_base;
 
-	printf("write 0x%x bytes to flash @ 0x%lx + 0x%x\n", len, spi_addr_phy, offset);
-	spi_base = devm_map(spi_addr_phy, 0x30);
-	if (!spi_base)
-		return -ENOMEM;
-	bm_spi_init((unsigned long)spi_base);
+	printf("write 0x%x bytes to flash @ 0x%llx + 0x%x\n", len, spi_addr_phy, offset);
+	bm_spi_init(spi_addr_phy);
 	ret = bm_spi_flash_program(buf, offset, len);
-	devm_unmap(spi_base, 0x30);
+	bm_spi_uninit();
 
 	return ret;
 }
@@ -63,7 +62,6 @@ int read_bin_from_flash(char *buf, unsigned long spi_addr_phy, uint32_t offset, 
 
 	return ret;
 }
-
 
 int set_write_protection(unsigned long spi_addr_phy, int enable)
 {
@@ -84,7 +82,7 @@ int set_write_protection(unsigned long spi_addr_phy, int enable)
 	return ret;
 }
 
-int do_flash_update(unsigned long spi_addr_phy, const char *input_str, int is_combo, uint32_t flash_offset)
+int do_flash_update(uint64_t spi_addr_phy, const char *input_str, int is_combo, uint32_t flash_offset)
 {
 	int input_fd = -1, ret = 0, i, do_len;
 	unsigned char *input_raw;
@@ -205,10 +203,11 @@ dump_out:
 int main(int argc, char **argv)
 {
 	int option, ret, is_combo = 0;
-	unsigned long spi_base = 0;
 	const char *input_str = NULL;
 	const char *output_str = NULL;
 	uint32_t flash_offset = 0, wp = 0, dump_len = 0;
+	uint64_t spi_base = 0;
+
 
 	if (argc == 1) {
 		printf("BM1684/BM1684X update combo spi_flash.bin:\n\t"
@@ -232,10 +231,20 @@ int main(int argc, char **argv)
 		printf("\n");
 		printf("BM1684/BM1686X write protection:\n\t"
 			"sudo flash_update -p -b 0x6000000\n");
+		printf("\n");
+
+		printf("BM1684/BM1684X using dbgi2c update spi_flash.bin:\n\t");
+		printf("./flash_update -f spi_flash.bin -b 0x6000000 -s 0x20 -m 1 \r\n");
+		printf("\n");
+
+		printf("SG2042 FPGA_MINI_A53 using dbgi2c update spi_flash.bin:\n\t");
+		printf("./flash_update -f spi_flash.bin -b 0x7011000000 -s 0x20 -m 1\r\n");
+		printf("\n");
+
 		return -EINVAL;
 	}
 
-	while ((option = getopt(argc, argv, "i:f:d:b:o:l:pq")) != -1) {
+	while ((option = getopt(argc, argv, "i:f:d:b:o:s:m:l:pq")) != -1) {
 		switch (option) {
 		case 'i':
 			input_str = strdup(optarg);
@@ -260,13 +269,20 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'b':
-			spi_base = xstrtol(optarg);
+			spi_base = xstrtoll(optarg);
 			break;
 		case 'o':
-			flash_offset = xstrtol(optarg);
+			flash_offset = xstrtoll(optarg);
+			break;
+		case 's':
+			set_dbgi2c_slave_addr(xstrtoll(optarg));
+			break;
+		case 'm':
+			set_i2c_port(xstrtoll(optarg));
+			set_memory_rw_dbgi2c();
 			break;
 		case 'l':
-			dump_len = xstrtol(optarg);
+			dump_len = xstrtoll(optarg);
 			break;
 		case 'p':
 			wp = 1;
@@ -277,7 +293,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!spi_base || (!wp && !output_str && !input_str) || (output_str && !dump_len)) {
+	if (!spi_base ||
+		(!wp && !output_str && !input_str) || (output_str && !dump_len)) {
 		printf("please give all arguments we need\n");
 		return -EFAULT;
 	}

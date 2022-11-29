@@ -335,6 +335,8 @@ source "drivers/gpu/drm/hisilicon/Kconfig"
 
 source "drivers/gpu/drm/mediatek/Kconfig"
 
+source "drivers/gpu/drm/smifb/Kconfig"
+
 source "drivers/gpu/drm/zte/Kconfig"
 
 source "drivers/gpu/drm/mxsfb/Kconfig"
@@ -358,6 +360,8 @@ source "drivers/gpu/drm/panfrost/Kconfig"
 source "drivers/gpu/drm/aspeed/Kconfig"
 
 source "drivers/gpu/drm/mcde/Kconfig"
+
+source "drivers/gpu/drm/evdi/Kconfig"
 
 # Keep legacy drivers last
 

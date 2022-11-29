@@ -1,0 +1,549 @@
+﻿-+===============================+-
+03/18/2019 Release version 1.3.0.0
+-+===============================+-
+
+1. Changes:
+	1. Support new 24.576MHz Crystal
+	2. Support up to kernel 5.0
+	3. Support USB Host
+	4. Support LVDS output
+	5. Fix edid reading crash bug
+   	
+
+2. Support Chipset
+	SM768
+
+3. Support OS/kernel/arch:
+	1.support OS :Ubuntu 18.04.1 LTS/ 16.04.3 LTS
+	2.support kernel version: 4.0 - 5.0
+	3.support arch: x86 and x86_64
+
+
+Note:
+1.If you use SM768 as primary card, you can directly use it. The driver will 
+set color depth to 16bpp by default. If you want to change it, please add in 
+kernel parameter "bpp = 32"
+
+2.If you use SM768 as secondary  card and let it work with onboard graphic 
+driver to do extend display. Please compile the driver with "make prime=1". 
+In this situation, color depth will be set to 32bpp.
+
+3. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will 
+be only DVI+CRT
+
+4. Screen may have some very quick garbage(<1s) in mode setting. All driver 
+have this issue. If you can duplicate the garbage in AMD card. Please set it 
+to OS issue.
+
+
+Known issue:
+1.It maybe screen garbage in monitor resume from suspend stauts, the 
+garbage will appear in less then half second then it will disappear. 
+
+2.For monitor PNP, please do it slowly. For example, Set HDMI and DVI to 
+dual, Plug out DVI. please wait and let it turn to HDMI only. then plug in CRT.
+
+3.Only support one 4K or Dual HD. 
+
+
+
+﻿-+===============================+-
+12/08/2017 Release version 1.2.4.0
+-+===============================+-
+
+1. Changes:
+   	 1. Update to support kernel from 3.10 to 4.15
+	 2. Fix one minor bug in audio
+	 
+
+2. Support Chipset
+	SM768 CS2 chip
+
+3. Support OS/kernel/arch:
+	1.support OS :Ubuntu 16.04.3 LTS
+	2.support kernel version: 4.10, 4.9
+	3.support arch: x86 and x86_64
+
+
+Note:
+1.If you use SM768 as primary card, you can directly use it. The driver will 
+set color depth to 16bpp by default. If you want to change it, please add in 
+kernel parameter "bpp = 32"
+
+2.If you use SM768 as secondary  card and let it work with onboard graphic 
+driver to do extend display. Please compile the driver with "make prime=1". 
+In this situation, color depth will be set to 32bpp.
+
+3. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will 
+be only DVI+CRT
+
+4. Screen may have some very quick garbage(<1s) in mode setting. All driver 
+have this issue. If you can duplicate the garbage in AMD card. Please set it 
+to OS issue.
+
+
+Known issue:
+1.It maybe screen garbage in monitor resume from suspend stauts, the 
+garbage will appear in less then half second then it will disappear. 
+
+2.For monitor PNP, please do it slowly. For example, Set HDMI and DVI to 
+dual, Plug out DVI. please wait and let it turn to HDMI only. then plug in CRT.
+
+3.Only support one 4K or Dual HD. 
+
+
+﻿-+===============================+-
+11/21/2017 Release version 1.2.3.1
+-+===============================+-
+
+1. Changes:
+   	 1. Update to support kernel4.14
+     2. Use 16bpp for SM768 by default
+     3. Modify the logic of PnP. Add new parameter "nopnp"
+     4. Change the HDMI audio to 44.1K sample rate.
+     5. minor changes for prime code.
+
+
+2. Support Chipset
+	SM768 CS2 chip
+
+3. Support OS/kernel/arch:
+	1.support OS :Ubuntu 16.04.3 LTS
+	2.support kernel version: 4.10, 4.9
+	3.support arch: x86 and x86_64
+
+
+Note:
+1.If you use SM768 as primary card, you can directly use it. The driver will 
+set color depth to 16bpp by default. If you want to change it, please add in 
+kernel parameter "bpp = 32"
+
+2.If you use SM768 as secondary  card and let it work with onboard graphic 
+driver to do extend display. Please compile the driver with "make prime=1". 
+In this situation, color depth will be set to 32bpp.
+
+3. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will 
+be only DVI+CRT
+
+4. Screen may have some very quick garbage(<1s) in mode setting. All driver 
+have this issue. If you can duplicate the garbage in AMD card. Please set it 
+to OS issue.
+
+
+Known issue:
+1.It maybe screen garbage in monitor resume from suspend stauts, the 
+garbage will appear in less then half second then it will disappear. 
+
+2.For monitor PNP, please do it slowly. For example, Set HDMI and DVI to 
+dual, Plug out DVI. please wait and let it turn to HDMI only. then plug in CRT.
+
+3.Only support one 4K or Dual HD. 
+
+
+﻿-+===============================+-
+10/31/2017 Release version 1.2.3.0
+-+===============================+-
+
+Features+:
+1. Make mode set work when noedid=1 is set to module parameter.
+2. Simpified the framebuffer dirty update function for prime support.
+3. Bypass the 4K@60HZ mode.
+4. Fix bug:2664,2666,2668,2669
+
+Support Chipset
+1.SM768 MP ASIC
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 16.04.3 LTS, Debian 9
+2.support kernel version: 4.10, 4.9
+3.support arch: x86 and x86_64
+
+Note:
+1.	If you use SM768 as primary card, you can directly use it. The driver will set color depth to 16bpp by default. If you want to change it, please add in kernel parameter "bpp = 32"
+2.	If you use SM768 as secondary  card and let it work with onboard graphic driver to do extend display. Please compile the driver with "make prime=1". 
+In this situation, color depth will be set to 32bpp.
+3. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will be only DVI+CRT
+
+   
+Known issue:
+
+1.	It maybe screen garbage in monitor resume from suspend stauts, the garbage will 
+appear in less then half second then it will disappear. 
+2.  For monitor PNP, please do it slowly. For example, Set HDMI and DVI to dual, Plug out 
+DVI. please wait and let it turn to HDMI only. then plug in CRT.
+3.  Currently 4K+1080p and 2K+1080p whose total width exceeds 4096 is not supported well because of hardware limits and the design of DRM. 
+
+-+===============================+-
+09/26/2017 Release version 1.2.2.0
+-+===============================+-
+
+Features+:
+1. Move the connector dpms callback function to encoder
+2. Simplified the fbdev function. We write the content directly to the on screen.
+3. Do pitch 16byte aligned for some special mode(1366x768,1600x900,1680x1050)
+3. Fix bug:2467, 2468, 2469,2470,2472,2383,1813,1817,1818,1819,1821,1823
+
+Support Chipset
+1.SM768 MP ASIC
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 16.04.3 LTS
+2.support kernel version: 4.10
+3.support arch: x86 and x86_64
+
+Note:
+1.	If you use SM768 as primary card, you can directly use it. The driver will set color depth to 16bpp by default. If you want to change it, please add in kernel parameter "bpp = 32"
+2.	If you use SM768 as secondary  card and let it work with onboard graphic driver to do extend display. Please compile the driver with "make prime=1". 
+In this situation, color depth will be set to 32bpp.
+3. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will be only DVI+CRT
+
+   
+Known issue:
+
+1.	It maybe screen garbage in monitor resume from suspend stauts, the garbage will 
+appear in less then half second then it will disappear. 
+2.  For monitor PNP, please do it slowly. For example, Set HDMI and DVI to dual, Plug out 
+DVI. please wait and let it turn to HDMI only. then plug in CRT.
+
+
+
+﻿-+===============================+-
+08/28/2017 Release version 1.2.1.0
+-+===============================+-
+
+Features+:
+1. Add PRIME support
+2. Refine the PM functions
+3. Move MACRO codes to makefile
+
+Support Chipset
+1.SM768 MP ASIC
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 16.04.2 LTS
+2.support kernel version: 4.8
+3.support arch: x86 and x86_64
+
+Note:
+1.	If you use SM768 as primary card, you can directly use it. The driver will set color depth to 16bpp by default. If you want to change it, please add in kernel parameter "bpp = 32"
+2.	If you use SM768 as secondary  card and let it work with onboard graphic driver to do extend display. Please compile the driver with "make prime=1". 
+In this situation, color depth will be set to 32bpp.
+3. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will be only DVI+CRT
+   
+Known issue:
+
+1.	It maybe screen garbage in monitor PnP/Mode setting/login/logout ,then the garbage will disappear. 
+It’s OS limitations and DRM arch issue. The new ATOMIC Arch driver will be resolve these issue. 
+We will implement atomic feature later.(bug 1813,1817,1818,1819,1821,1822,1823,1820)
+
+2. Using new modesetting could solve these problems below(We provided binary of x64 as a sample):
+	1) Improve tearing issue.
+	2) Fix bug of 2-mice.
+The new version will be included in newer version of Ubuntu. So we just suggest(but not force) users to use newer modesetting.	
+Dowload path: svn://172.17.9.90/Falcon/Software/RemoteDisplay/Linux/Drivers/XServer/Sources/Trunk/modesetting
+svn revision: 46021
+
+3. Current driver can't support rotation on Dual View. Please set rotation function in single view or clone view.
+
+
+
+﻿-+===============================+-
+08/08/2017 Release version 1.2.0.0
+-+===============================+-
+
+Features+:
+1. Add MP ASIC supporting
+2. Add 2K(2560x1440) and 4K(3840x2160) mode supporting
+3. Use graphic layer to display
+4. Use HW I2C for EDID getting
+
+Support Chipset
+1.sm768 MP ASIC
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 16.04.2 LTS
+2.support kernel version: 4.8
+3.support arch: x86 and x86_64
+
+Note:
+1. SM768 as primary card: please use MP FIB board and load VBIOS in the SROM 
+   SM768 as secondary card: Need xorg.conf file , you can refer the file in the driver folder
+
+2. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will be only DVI+CRT
+3. Please use DVI-VGA converter to test DVI monitor. We didn’t add SIL164 DVI transmitter code into the driver.
+   
+Known issue:
+1. After reboot, can't enter the OS (Random 1/20). May kernel crushed. It may caused by kernel version.
+
+2.	It maybe screen garbage in monitor PnP/Mode setting/login/logout ,then the garbage will disappear. 
+It’s OS limitations and DRM arch issue. The new ATOMIC Arch driver will be resolve these issue. 
+We will implement atomic feature later.(bug 1813,1817,1818,1819,1821,1822,1823,1820)
+
+3. Using new modesetting could solve these problems below(We provided binary of x64 as a sample):
+	1) Improve tearing issue.
+	2) Fix bug of 2-mice.
+The new version will be included in newer version of Ubuntu. So we just suggest(but not force) users to use newer modesetting.	
+Dowload path: svn://172.17.9.90/Falcon/Software/RemoteDisplay/Linux/Drivers/XServer/Sources/Trunk/modesetting
+svn revision: 46021
+
+4. Current driver can't support rotation on Dual View. Please set rotation function in single view or clone view.
+
+
+-+===============================+-
+07/03/2017 Release version 1.1.4.0
+-+===============================+-
+
+Features+:
+1.	Add hibernation supporting.
+2.  Update to match kernel version 4.4.
+3.  Update irq part.
+4.	Fix bug number: 1987 1991 1804 1808
+
+Support Chipset
+1.sm768
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 16.04.2 LTS
+2.support kernel version: 4.8
+3.support arch: x86 and x86_64
+
+Known issue:
+1. As SM768 shuttle2 ASIC has HW PCI class issue(Non-VGA Class), we have some 
+limitations:
+	a.  We can only  use SM768 as primary card in limited motherboards. 
+		But it’s not suitable for all the motherboard. 
+		So we suggest to set SM768 as secondary card for testing.
+	b. If you want to use it as secondary card in system. Please follow the steps below:
+		For using of motherboard include Intel’s GPU chip:
+		Please DO NOT occupy i915.ko etc. You can delete i915.ko and rebuild the 
+		ramfs(ie:mkinitramfs /boot/initrd.img-4.8.0-58-generic).
+	c. Please use the xorg.conf file in driver for testing in case for SM768
+	d. Because this not a common case for the driver loading, sometimes the 
+		system will dead after start X(Intel driver also has this issue).Please 
+		delete the xorg.conf file and let the X start. Then stop the X and add the 
+		xorg.conf file. Finally, restart the X agian.
+
+2. For monitor PNP, please plug-in the new monitor after the old monitor 
+plug-out status changed.(bug 1807).It¡¯s HW limitation (SW I2C Read slow)on shuttle2.We will fix it when we received MP chip.
+
+3. The desktop depth set to 16bpp default. Please use 16bpp for testing. If you 
+still want to use 32bpp, please modify the macro DRVBPP in smi_drv.h file to 24 
+
+4. After reboot, can't enter the OS (Random 1/20). May kernel crushed. It may caused by kernel version.
+
+5.	It maybe screen garbage in monitor PnP/Mode setting/login/logout ,then the garbage will disappear. 
+It’s OS limitations and DRM arch issue. The new ATOMIC Arch driver will be resolve these issue. 
+We will implement atomic feature later.(bug 1813,1817,1818,1819,1821,1822,1823,1820)
+
+6. VGA port only: Sometimes, for some monitor(eg ViewSonic 22') edid cannot be read by using DDK counter loop wait.
+It caused by unstable shuttle2 HW I2C. As MP chip GPIO SW I2C will be redefined and HW I2C will be stable. 
+The code is ready and we will modify it later.
+
+7. Using new modesetting could solve these problems below(We provided binary of x64 as a sample):
+	1) Improve tearing issue.
+	2) Fix bug of 2-mice.
+The new version will be included in newer version of Ubuntu. So we just suggest(but not force) users to use newer modesetting.	
+Dowload path: svn://172.17.9.90/Falcon/Software/RemoteDisplay/Linux/Drivers/XServer/Sources/Trunk/modesetting
+svn revision: 46021
+
+8. Please DO NOT test rotation function. Xorg Modesetting driver rotation function has bugs. (eg: Can't rotate in DualView)
+
+Note:
+1. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will be 
+only DVI+CRT
+2. If the system doesn't do the monitor PnP, plesae press the Detect Display 
+button on the Display control panel.
+3. Please use DVI-VGA converter to test DVI monitor. We didn’t add SIL164 DVI transmitter code into the driver.
+
+-+===============================+-
+05/30/2017 Release version 1.1.3.0
+-+===============================+-
+Features:
+1.	Add plane supporting
+2.  Change cursor to plane supporting
+3.	Fix bug about HDMI Dpms 
+4.	Improve edid_read function
+5.	Update the HDMI lib to V2.0
+6.	Tidy up the code
+7.  Merge SM768 audio driver into the DRM driver.(Need to improve)
+8.  Fix bug number:1799 1800 1801 1802 1803 1804 1805
+                   1806 1808 1810 1811 1812 1814 1824
+
+Support Chipset
+1.sm768
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 16.04.2 LTS
+2.support kernel version: 4.8
+3.support arch: x86 and x86_64
+
+Known issue:
+1. As SM768 shuttle2 ASIC has HW PCI class issue(Non-VGA Class), we have some 
+limitations:
+	a.we must use SM768 card as primary card. 
+	b. If you want to use it as secondary card in system, please use modified 
+modesetting driver. Please DO NOT occupy i915.ko etc. You can delete i915.ko and rebuild the 
+ramfs(ie:mkinitramfs /boot/initrd.img-4.2.0-27-generic).
+	c. Please use the xorg.conf file in driver for testing in case for SM768
+	d. Becasue this not a common case for the driver loading, sometimes the 
+	system will dead after start X(Intel driver also has this issue).Please 
+	delete the xorg.conf file and let the X start. Then stop the X and add the 
+	xorg.conf file. Finally, restart the X agian.
+
+2. For monitor PNP, please plug-in the new monitor after the old monitor 
+plug-out status changed.
+
+3. The desktop depth set to 16bpp default. Please use 16bpp for testing. If you 
+still want to use 32bpp, please modify the macro DRVBPP in smi_drv.h file to 24 
+
+Note:
+1. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will be 
+only DVI+CRT
+2. If the system doesn't do the monitor PnP, plesae press the Detect Display 
+button on the Display control panel.
+
+
+
+-+===============================+-
+04/10/2017 Release version 1.1.2.0
+-+===============================+-
+Features:
+1. Update the Monitor PnP logic. Simpfiled the code.
+2. fix the two cursor display on the add screen bug.
+3. Modify the vblank int code and clean up it.
+4. Use the true vrefresh in the code. It should be calulated not be hard coded.
+
+
+Support Chipset
+1.sm750, sm768
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 14.04.5 LTS/16.04.2 LTS
+2.support kernel version: 4.2/ 4.4/ 4.8
+3.support arch: x86 and x86_64
+
+Known issue:
+1. As SM768 shuttle2 ASIC has HW PCI class issue(Non-VGA Class), we have some 
+limitations:
+	a.we must use SM768 card as primary card. 
+	b. If you want to use it as secondary card in system, please use modified 
+modesetting driver. Please DO NOT occupy i915.ko etc. You can delete i915.ko and rebuild the 
+ramfs(ie:mkinitramfs /boot/initrd.img-4.2.0-27-generic).
+	c. Please use the xorg.conf file in driver for testing in case for SM768
+	d. Becasue this not a common case for the driver loading, sometimes the 
+	system will dead after start X(Intel driver also has this issue).Please 
+	delete the xorg.conf file and let the X start. Then stop the X and add the 
+	xorg.conf file. Finally, restart the X agian.
+
+2. For monitor PNP, please plug-in the new monitor after the old monitor 
+plug-out status changed.
+
+3. The desktop depth set to 16bpp default. Please use 16bpp for testing. If you 
+still want to use 32bpp, please modify the macro DRVBPP in smi_drv.h file to 24 
+
+Note:
+1. If we plug-in three monitor(CRT,DVI,HDMI) simultaneously, the output will be 
+only DVI+CRT
+2. If the system doesn't do the monitor PnP, plesae press the Detect Display 
+button on the Display control panel.
+
+
+
+
+-+===============================+-
+03/02/2017 Release version 1.1.1.0
+-+===============================+-
+Features:
+1. Update to support Ubuntu 16.04.2 LTS
+2. Enable shadowFB and change to 16bpp for better performance.
+3. Implement simply page flip function.
+4. Add logic for dynamic HDMI output.
+
+
+Support Chipset
+1.sm750, sm768
+
+Support OS/kernel/arch:
+1.support OS :Ubuntu 14.04.5 LTS/16.04.2 LTS
+2.support kernel version: 4.2/ 4.4/ 4.8
+3.support arch: x86 and x86_64
+
+Known issue:
+1. As SM768 shuttle2 ASIC has HW PCI class issue(Non-VGA Class), we must use SM768 card as primary 
+card. If you want to use it as secondary card in system, please use modified 
+modesetting driver. Please DO NOT occupy i915.ko etc. You can delete i915.ko and rebuild the ramfs.
+
+2. For monitor PNP, please plug-in the new monitor after the old monitor 
+plug-out status changed.
+
+3. There are 2 cursors while adding screen. One of them disappears after moving cursor between 2 screens.
+
+
+-+===============================+-
+11/04/2016 Release version 1.1.0
+-+===============================+-
+Features:
+1. Add support of EDID
+2. Add support for ASIC board and use overlay for screens.
+3. Add HDMI support.(HDMI use the same output of Channel 0)
+4. Add monitor detect.
+5. Add dpms.
+
+
+Support Chipset
+1.sm750, sm768
+
+Support OS/kernel/arch:
+1.support OS under x86 and x86_64: Ubuntu 14.04.5/16.04.1
+2.support kernel version: 4.2/ 4.4/ 4.8
+3.support arch: x86 and x86_64
+
+
+-+===============================+-
+02/02/2016 Release version 1.0.2
+-+===============================+-
+Features:
+1. Add support of Hibernation and Suspend.
+
+Known issue:
+1. Critical error while startx in kernel. 50%+ probability. Can be fix by add one "print" in kernel.
+
+Support Chipset
+1.sm750, sm768
+
+Support OS/kernel/arch:
+1.support OS under x86 and x86_64: Ubuntu 13.04/14.04/15.04
+2.support kernel version:3.8/3.13/ 3.19
+3.support arch: x86 and x86_64
+-+===============================+-
+12/24/2015 Release version 1.0.1
+-+===============================+-
+Features:
+1+. Support OS Ubuntu 15.04.
+
+Known issue:
+1. Critical error while startx in kernel. 50%+ probability. Can be fix by add one "print" in kernel.
+
+Support Chipset
+1.sm750, sm768
+
+Support OS/kernel/arch:
+1.support OS under x86 and x86_64: Ubuntu 13.04/14.04/15.04
+2.support kernel version:3.8/3.13/ 3.19
+3.support arch: x86 and x86_64
+
+-+===============================+-
+10/15/2015 Release version 1.0.0
+-+===============================+-
+
+Features:
+1. Support console and X window.
+
+Support Chipset
+1.sm750, sm768
+
+Support OS/kernel/arch:
+1.support OS under x86 and x86_64: Ubuntu 13.04/14.04
+2.support kernel version:3.8/3.13
+3.support arch: x86 and x86_64
+

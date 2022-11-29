@@ -1,5 +1,3 @@
-#include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -10,9 +8,11 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include "bm_spi.h"
+#include "dbg_i2c.h"
+#include "mm_io.h"
 
-static unsigned long ctrl_base;
 static int devmem_fd;
+static struct bm_memory_ops mem_rw_ops;
 
 #define NOTICE(...)	printf("NOTICE:  " __VA_ARGS__)
 #define INFO(...)	printf("INFO:  " __VA_ARGS__)
@@ -22,76 +22,14 @@ static int devmem_fd;
 #define udelay(a) usleep(a)
 #define mdelay(a) usleep(a * 1000)
 
-void *devm_map(unsigned long addr, int len)
+void set_memory_rw_dbgi2c(void)
 {
-	off_t offset;
-	void *map_base = NULL;
-
-	devmem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-	if (devmem_fd == -1) {
-		ERROR("cannot open '/dev/mem' (-%d)\n", errno);
-		goto open_err;
-	}
-
-	offset = addr & ~(sysconf(_SC_PAGE_SIZE) - 1);
-
-	map_base = mmap(NULL, len + addr - offset, PROT_READ | PROT_WRITE,
-		       MAP_SHARED, devmem_fd, offset);
-	if (map_base == MAP_FAILED) {
-		ERROR("mmap 0x%lx failed\n", addr);
-		goto mmap_err;
-	}
-
-	printf("%p mapped at address %p\n", (void *)addr, map_base);
-
-mmap_err:
-	close(devmem_fd);
-open_err:
-	return map_base;
+	mem_rw_ops.rw_type = DBG_I2C_RW;
 }
 
-void devm_unmap(void *virt_addr, int len)
+int get_memory_rw_type(void)
 {
-	unsigned long addr;
-
-	if (devmem_fd == -1) {
-		ERROR(" '/dev/mem' is closed\n");
-		return;
-	}
-
-	/* page align */
-	addr = (((unsigned long)virt_addr) & ~(sysconf(_SC_PAGE_SIZE) - 1));
-	munmap((void *)addr, len + (unsigned long)virt_addr - addr);
-	close(devmem_fd);
-	printf("unmapped %p\n", virt_addr);
-}
-
-static inline uint32_t mmio_read_32(unsigned long addr)
-{
-	uint32_t val = *(uint32_t *)addr;
-
-	VERBOSE("0x%lx <- 0x%x\n", addr, val);
-	return val;
-}
-
-static inline void mmio_write_32(unsigned long addr, uint32_t val)
-{
-	*(uint32_t *)addr = val;
-	VERBOSE("0x%lx -> 0x%x\n", addr, val);
-}
-
-static inline uint8_t mmio_read_8(unsigned long addr)
-{
-	uint8_t val = *(uint8_t *)addr;
-
-	VERBOSE("0x%lx <- 0x%x\n", addr, val);
-	return val;
-}
-
-static inline void mmio_write_8(unsigned long addr, uint8_t val)
-{
-	*(uint8_t *)addr = val;
-	VERBOSE("0x%lx -> 0x%x\n", addr, val);
+	return mem_rw_ops.rw_type;
 }
 
 uint32_t bm_get_chip_id(void)
@@ -112,8 +50,8 @@ uint32_t bm_get_chip_id(void)
 	return val;
 }
 
-static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *cmd_buf,
-	int with_cmd, int addr_bytes, int data_bytes)
+static int spi_data_in_tran(uint64_t spi_base, uint8_t *dst_buf,
+		uint8_t *cmd_buf, int with_cmd, int addr_bytes, int data_bytes)
 {
 	uint32_t *p_data = (uint32_t *)cmd_buf;
 	uint32_t tran_csr = 0;
@@ -126,7 +64,7 @@ static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *c
 	}
 
 	/* init tran_csr */
-	tran_csr = mmio_read_32(spi_base + REG_SPI_TRAN_CSR);
+	tran_csr = mem_rw_ops.read32(spi_base + REG_SPI_TRAN_CSR);
 	tran_csr &= ~(BIT_SPI_TRAN_CSR_TRAN_MODE_MASK
 			| BIT_SPI_TRAN_CSR_ADDR_BYTES_MASK
 			| BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_MASK
@@ -136,20 +74,20 @@ static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *c
 	tran_csr |= BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_8_BYTE;
 	tran_csr |= BIT_SPI_TRAN_CSR_TRAN_MODE_RX;
 
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0); // flush FIFO before filling fifo
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0); // flush FIFO before filling fifo
 	if (with_cmd) {
 		for (i = 0; i < ((cmd_bytes - 1) / 4 + 1); i++)
-			mmio_write_32(spi_base + REG_SPI_FIFO_PORT, p_data[i]);
+			mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PORT, p_data[i]);
 	}
 
 	/* issue tran */
-	mmio_write_32(spi_base + REG_SPI_INT_STS, 0); // clear all int
-	mmio_write_32(spi_base + REG_SPI_TRAN_NUM, data_bytes);
+	mem_rw_ops.write32(spi_base + REG_SPI_INT_STS, 0); // clear all int
+	mem_rw_ops.write32(spi_base + REG_SPI_TRAN_NUM, data_bytes);
 	tran_csr |= BIT_SPI_TRAN_CSR_GO_BUSY;
-	mmio_write_32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
+	mem_rw_ops.write32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
 
 	/* check rd int to make sure data out done and in data started */
-	while ((mmio_read_32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_RD_FIFO) == 0)
+	while ((mem_rw_ops.read32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_RD_FIFO) == 0)
 		;
 
 	/* get data */
@@ -161,21 +99,21 @@ static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *c
 		else
 			xfer_size = data_bytes - off;
 
-		while ((mmio_read_32(spi_base + REG_SPI_FIFO_PT) & 0xF) != xfer_size)
+		while ((mem_rw_ops.read32(spi_base + REG_SPI_FIFO_PT) & 0xF) != xfer_size)
 			;
 		for (i = 0; i < ((xfer_size - 1) / 4 + 1); i++)
-			p_data[off / 4 + i] = mmio_read_32(spi_base + REG_SPI_FIFO_PORT);
+			p_data[off / 4 + i] = mem_rw_ops.read32(spi_base + REG_SPI_FIFO_PORT);
 		off += xfer_size;
 	}
 
 	/* wait tran done */
-	while ((mmio_read_32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
+	while ((mem_rw_ops.read32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
 		;
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0);    //should flush FIFO after tran
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0);    //should flush FIFO after tran
 	return 0;
 }
 
-static int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size)
+static int spi_data_read(uint64_t spi_base, uint8_t *dst_buf, int addr, int size)
 {
 	uint8_t cmd_buf[4];
 
@@ -188,14 +126,14 @@ static int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int
 	return 0;
 }
 
-void bm_spi_flash_read_sector(unsigned long spi_base, uint32_t addr, uint8_t *buf)
+void bm_spi_flash_read_sector(uint64_t spi_base, uint32_t addr, uint8_t *buf)
 {
 	spi_data_read(spi_base, buf, (int)addr, 256);
 }
 
 size_t spi_flash_read_blocks(int lba, uintptr_t buf, size_t size)
 {
-	spi_data_read(ctrl_base, (uint8_t *)buf, lba * SPI_FLASH_BLOCK_SIZE, size);
+	spi_data_read(mem_rw_ops.ctrl_base, (uint8_t *)buf, lba * SPI_FLASH_BLOCK_SIZE, size);
 	return size;
 }
 
@@ -205,28 +143,51 @@ size_t spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size)
 	return -ENODEV;
 }
 
-void bm_spi_init(unsigned long base)
+void bm_spi_init(uint64_t base)
 {
 	uint32_t tran_csr = 0;
 
-	ctrl_base = base;
+	if (mem_rw_ops.rw_type == DBG_I2C_RW) {
+		mem_rw_ops.init = dbgi2c_init;
+		mem_rw_ops.relase = dbgi2c_close;
+		mem_rw_ops.write32 = dbgi2c_write32;
+		mem_rw_ops.read32 = dbgi2c_read32;
+		mem_rw_ops.write8 = dbgi2c_write8;
+		mem_rw_ops.read8 = dbgi2c_read8;
+		mem_rw_ops.ctrl_base = base;
+		mem_rw_ops.init(base);
+	} else if (mem_rw_ops.rw_type == MEM_IO_RW) {
+		mem_rw_ops.init = mmio_init;
+		mem_rw_ops.relase = mmio_relase;
+		mem_rw_ops.write32 = mmio_write_32;
+		mem_rw_ops.read32 = mmio_read_32;
+		mem_rw_ops.write8 = mmio_write_8;
+		mem_rw_ops.read8 = mmio_read_8;
+		mem_rw_ops.ctrl_base = (uint64_t)mem_rw_ops.init(base);
+	}
 
 	// disable DMMR (direct memory mapping read)
-	mmio_write_32(ctrl_base + REG_SPI_DMMR, 0);
+	mem_rw_ops.write32(mem_rw_ops.ctrl_base + REG_SPI_DMMR, 0);
 	// soft reset
-	mmio_write_32(ctrl_base + REG_SPI_CTRL, mmio_read_32(ctrl_base + REG_SPI_CTRL) | BIT_SPI_CTRL_SRST | 0x3);
+	mem_rw_ops.write32(mem_rw_ops.ctrl_base + REG_SPI_CTRL,
+			mem_rw_ops.read32(mem_rw_ops.ctrl_base + REG_SPI_CTRL) | BIT_SPI_CTRL_SRST | 0x3);
 	// hardware CE control, soft reset won't change this reg...
-	mmio_write_32(ctrl_base + REG_SPI_CE_CTRL, 0x0);
+	mem_rw_ops.write32(mem_rw_ops.ctrl_base + REG_SPI_CE_CTRL, 0x0);
 
 	tran_csr |= (0x03 << SPI_TRAN_CSR_ADDR_BYTES_SHIFT);
 	tran_csr |= BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_4_BYTE;
 	tran_csr |= BIT_SPI_TRAN_CSR_WITH_CMD;
-	mmio_write_32(ctrl_base + REG_SPI_TRAN_CSR, tran_csr);
+	mem_rw_ops.write32(mem_rw_ops.ctrl_base + REG_SPI_TRAN_CSR, tran_csr);
+}
+
+void bm_spi_uninit(void)
+{
+	mem_rw_ops.relase((void *)mem_rw_ops.ctrl_base);
 }
 
 /* here are APIs for SPI flash programming */
 
-static uint8_t spi_non_data_tran(unsigned long spi_base, uint8_t *cmd_buf,
+static uint8_t spi_non_data_tran(uint64_t spi_base, uint8_t *cmd_buf,
 	uint32_t with_cmd, uint32_t addr_bytes)
 {
 	uint32_t *p_data = (uint32_t *)cmd_buf;
@@ -238,7 +199,7 @@ static uint8_t spi_non_data_tran(unsigned long spi_base, uint8_t *cmd_buf,
 	}
 
 	/* init tran_csr */
-	tran_csr = mmio_read_32(spi_base + REG_SPI_TRAN_CSR);
+	tran_csr = mem_rw_ops.read32(spi_base + REG_SPI_TRAN_CSR);
 	tran_csr &= ~(BIT_SPI_TRAN_CSR_TRAN_MODE_MASK
 		  | BIT_SPI_TRAN_CSR_ADDR_BYTES_MASK
 		  | BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_MASK
@@ -247,23 +208,23 @@ static uint8_t spi_non_data_tran(unsigned long spi_base, uint8_t *cmd_buf,
 	tran_csr |= BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_1_BYTE;
 	tran_csr |= (with_cmd ? BIT_SPI_TRAN_CSR_WITH_CMD : 0);
 
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0); //do flush FIFO before filling fifo
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0); //do flush FIFO before filling fifo
 
-	mmio_write_32(spi_base + REG_SPI_FIFO_PORT, p_data[0]);
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PORT, p_data[0]);
 
 	/* issue tran */
-	mmio_write_32(spi_base + REG_SPI_INT_STS, 0); //clear all int
+	mem_rw_ops.write32(spi_base + REG_SPI_INT_STS, 0); //clear all int
 	tran_csr |= BIT_SPI_TRAN_CSR_GO_BUSY;
-	mmio_write_32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
+	mem_rw_ops.write32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
 
 	/* wait tran done */
-	while ((mmio_read_32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
+	while ((mem_rw_ops.read32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
 		;
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0); //should flush FIFO after tran
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0); //should flush FIFO after tran
 	return 0;
 }
 
-static uint8_t spi_data_out_tran(unsigned long spi_base, uint8_t *src_buf, uint8_t *cmd_buf,
+static uint8_t spi_data_out_tran(uint64_t spi_base, uint8_t *src_buf, uint8_t *cmd_buf,
 	uint32_t with_cmd, uint32_t addr_bytes, uint32_t data_bytes)
 {
 	uint32_t *p_data = (uint32_t *)cmd_buf;
@@ -279,7 +240,7 @@ static uint8_t spi_data_out_tran(unsigned long spi_base, uint8_t *src_buf, uint8
 	}
 
 	/* init tran_csr */
-	tran_csr = mmio_read_32(spi_base + REG_SPI_TRAN_CSR);
+	tran_csr = mem_rw_ops.read32(spi_base + REG_SPI_TRAN_CSR);
 	tran_csr &= ~(BIT_SPI_TRAN_CSR_TRAN_MODE_MASK
 		  | BIT_SPI_TRAN_CSR_ADDR_BYTES_MASK
 		  | BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_MASK
@@ -289,17 +250,17 @@ static uint8_t spi_data_out_tran(unsigned long spi_base, uint8_t *src_buf, uint8
 	tran_csr |= BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_8_BYTE;
 	tran_csr |= BIT_SPI_TRAN_CSR_TRAN_MODE_TX;
 
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0); //do flush FIFO before filling fifo
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0); //do flush FIFO before filling fifo
 	if (with_cmd)
 		for (i = 0; i < ((cmd_bytes - 1) / 4 + 1); i++)
-			mmio_write_32(spi_base + REG_SPI_FIFO_PORT, p_data[i]);
+			mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PORT, p_data[i]);
 
 	/* issue tran */
-	mmio_write_32(spi_base + REG_SPI_INT_STS, 0); //clear all int
-	mmio_write_32(spi_base + REG_SPI_TRAN_NUM, data_bytes);
+	mem_rw_ops.write32(spi_base + REG_SPI_INT_STS, 0); //clear all int
+	mem_rw_ops.write32(spi_base + REG_SPI_TRAN_NUM, data_bytes);
 	tran_csr |= BIT_SPI_TRAN_CSR_GO_BUSY;
-	mmio_write_32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
-	while ((mmio_read_32(spi_base + REG_SPI_FIFO_PT) & 0xF) != 0)
+	mem_rw_ops.write32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
+	while ((mem_rw_ops.read32(spi_base + REG_SPI_FIFO_PT) & 0xF) != 0)
 		; //wait for cmd issued
 
 	/* fill data */
@@ -312,7 +273,7 @@ static uint8_t spi_data_out_tran(unsigned long spi_base, uint8_t *src_buf, uint8
 			xfer_size = data_bytes - off;
 
 		wait = 0;
-		while ((mmio_read_32(spi_base + REG_SPI_FIFO_PT) & 0xF) != 0) {
+		while ((mem_rw_ops.read32(spi_base + REG_SPI_FIFO_PT) & 0xF) != 0) {
 			wait++;
 			udelay(10);
 			if (wait > 30000) { // 300ms
@@ -322,15 +283,15 @@ static uint8_t spi_data_out_tran(unsigned long spi_base, uint8_t *src_buf, uint8
 		}
 
 		for (i = 0; i < ((xfer_size - 1) / 4 + 1); i++)
-			mmio_write_32(spi_base + REG_SPI_FIFO_PORT, p_data[off / 4 + i]);
+			mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PORT, p_data[off / 4 + i]);
 
 		off += xfer_size;
 	}
 
 	/* wait tran done */
-	while ((mmio_read_32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
+	while ((mem_rw_ops.read32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
 		;
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0); //should flush FIFO after tran
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0); //should flush FIFO after tran
 	return 0;
 }
 
@@ -341,7 +302,7 @@ static uint8_t spi_data_out_tran(unsigned long spi_base, uint8_t *src_buf, uint8
  * So send_bytes should be 3 (write 1 dw into fifo) or 7(write 2 dw), get_bytes sould be the same value.
  * software would mask out useless data in get_bytes.
  */
-static uint8_t spi_in_out_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *src_buf,
+static uint8_t spi_in_out_tran(uint64_t spi_base, uint8_t *dst_buf, uint8_t *src_buf,
 	uint32_t with_cmd, uint32_t addr_bytes, uint32_t send_bytes, uint32_t get_bytes)
 {
 	uint8_t *p_data = (uint8_t *)src_buf;
@@ -360,7 +321,7 @@ static uint8_t spi_in_out_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t
 	}
 
 	/* init tran_csr */
-	tran_csr = mmio_read_32(spi_base + REG_SPI_TRAN_CSR);
+	tran_csr = mem_rw_ops.read32(spi_base + REG_SPI_TRAN_CSR);
 	tran_csr &= ~(BIT_SPI_TRAN_CSR_TRAN_MODE_MASK
 		  | BIT_SPI_TRAN_CSR_ADDR_BYTES_MASK
 		  | BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_MASK
@@ -371,29 +332,30 @@ static uint8_t spi_in_out_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t
 	tran_csr |= BIT_SPI_TRAN_CSR_TRAN_MODE_TX;
 	tran_csr |= BIT_SPI_TRAN_CSR_TRAN_MODE_RX;
 
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0); //do flush FIFO before filling fifo
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0); //do flush FIFO before filling fifo
 	total_out_bytes = addr_bytes + send_bytes + (with_cmd ? 1 : 0);
 	for (i = 0; i < total_out_bytes; i++)
-		mmio_write_8(spi_base + REG_SPI_FIFO_PORT, p_data[i]);
+		mem_rw_ops.write8(spi_base + REG_SPI_FIFO_PORT, p_data[i]);
 
 	/* issue tran */
-	mmio_write_32(spi_base + REG_SPI_INT_STS, 0); //clear all int
-	mmio_write_32(spi_base + REG_SPI_TRAN_NUM, get_bytes);
+	mem_rw_ops.write32(spi_base + REG_SPI_INT_STS, 0); //clear all int
+	mem_rw_ops.write32(spi_base + REG_SPI_TRAN_NUM, get_bytes);
 	tran_csr |= BIT_SPI_TRAN_CSR_GO_BUSY;
-	mmio_write_32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
+	mem_rw_ops.write32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
 
 	/* wait tran done and get data */
-	while ((mmio_read_32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
+	while ((mem_rw_ops.read32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_TRAN_DONE) == 0)
 		;
+
 	p_data = (uint8_t *)dst_buf;
 	for (i = 0; i < get_bytes; i++)
-		p_data[i] = mmio_read_8(spi_base + REG_SPI_FIFO_PORT);
+		p_data[i] = mem_rw_ops.read8(spi_base + REG_SPI_FIFO_PORT);
 
-	mmio_write_32(spi_base + REG_SPI_FIFO_PT, 0); //should flush FIFO after tran
+	mem_rw_ops.write32(spi_base + REG_SPI_FIFO_PT, 0); //should flush FIFO after tran
 	return 0;
 }
 
-static uint8_t spi_write_en(unsigned long spi_base)
+static uint8_t spi_write_en(uint64_t spi_base)
 {
 	uint8_t cmd_buf[4];
 
@@ -416,7 +378,7 @@ static void spi_bulk_erase(unsigned long spi_base)
 }
 #endif
 
-static uint8_t spi_read_status(unsigned long spi_base)
+static uint8_t spi_read_status(uint64_t spi_base)
 {
 	uint8_t cmd_buf[4];
 	uint8_t data_buf[4];
@@ -431,7 +393,7 @@ static uint8_t spi_read_status(unsigned long spi_base)
 	return data_buf[0];
 }
 
-static uint8_t spi_read_status_high(unsigned long spi_base)
+static uint8_t spi_read_status_high(uint64_t spi_base)
 {
 	uint8_t cmd_buf[4];
 	uint8_t data_buf[4];
@@ -446,7 +408,7 @@ static uint8_t spi_read_status_high(unsigned long spi_base)
 	return data_buf[0];
 }
 
-static void spi_write_status(unsigned long spi_base, uint16_t value)
+static void spi_write_status(uint64_t spi_base, uint16_t value)
 {
 	uint8_t cmd_buf[4];
 	uint8_t data_buf[4];
@@ -462,7 +424,7 @@ static void spi_write_status(unsigned long spi_base, uint16_t value)
 	INFO("write status: 0x%x\n", value);
 }
 
-uint32_t bm_spi_read_id(unsigned long spi_base)
+uint32_t bm_spi_read_id(uint64_t spi_base)
 {
 	uint8_t cmd_buf[4];
 	uint8_t data_buf[4];
@@ -478,7 +440,7 @@ uint32_t bm_spi_read_id(unsigned long spi_base)
 	return read_id;
 }
 
-static uint8_t spi_page_program(unsigned long spi_base, uint8_t *src_buf, uint32_t addr, uint32_t size)
+static uint8_t spi_page_program(uint64_t spi_base, uint8_t *src_buf, uint32_t addr, uint32_t size)
 {
 	uint8_t cmd_buf[4];
 
@@ -493,7 +455,7 @@ static uint8_t spi_page_program(unsigned long spi_base, uint8_t *src_buf, uint32
 	return 0;
 }
 
-static void spi_sector_erase(unsigned long spi_base, uint32_t addr)
+static void spi_sector_erase(uint64_t spi_base, uint32_t addr)
 {
 	uint8_t cmd_buf[4];
 
@@ -507,12 +469,13 @@ static void spi_sector_erase(unsigned long spi_base, uint32_t addr)
 	spi_non_data_tran(spi_base, cmd_buf, 1, 3);
 }
 
-int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr)
+int bm_spi_flash_erase_sector(uint64_t spi_base, uint32_t addr)
 {
 	uint32_t spi_status, wait = 0;
 
 	spi_write_en(spi_base);
 	spi_status = spi_read_status(spi_base);
+	printf("eraseing one sector.....\r\n");
 	if ((spi_status & SPI_STATUS_WEL) == 0) {
 		ERROR("write en failed, get status: 0x%x\n", spi_status);
 		return -1;
@@ -566,7 +529,7 @@ static int do_bulk_erase(unsigned long spi_base)
 }
 #endif
 
-int bm_spi_flash_program_sector(unsigned long spi_base, uint32_t addr)
+int bm_spi_flash_program_sector(uint64_t spi_base, uint32_t addr)
 {
 	uint8_t cmd_buf[256], spi_status;
 	uint32_t wait = 0;
@@ -595,7 +558,7 @@ int bm_spi_flash_program_sector(unsigned long spi_base, uint32_t addr)
 	return 0;
 }
 
-static int do_page_program(unsigned long spi_base, uint8_t *src_buf, uint32_t addr, uint32_t size)
+static int do_page_program(uint64_t spi_base, uint8_t *src_buf, uint32_t addr, uint32_t size)
 {
 	uint8_t spi_status;
 	uint32_t wait = 0;
@@ -677,7 +640,7 @@ static void dump_hex(char *desc, void *addr, int len)
 	printf("  %s\n", buff);
 }
 
-static void fw_sp_read_test(unsigned long spi_base, uint32_t addr)
+static void fw_sp_read_test(uint64_t spi_base, uint32_t addr)
 {
 	unsigned char cmp_buf[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -691,7 +654,7 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 	uint8_t cmp_buf[SPI_FLASH_BLOCK_SIZE], erased_sectors, i;
 	uint32_t id, sector_size;
 
-	id = bm_spi_read_id(ctrl_base);
+	id = bm_spi_read_id(mem_rw_ops.ctrl_base);
 	if (id == SPI_ID_M25P128) {
 		sector_size = 256 * 1024;
 	} else if (id == SPI_ID_N25Q128 || id == SPI_ID_GD25LQ128) {
@@ -710,9 +673,9 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 	INFO("Start erasing %d sectors, each %d bytes...\n", erased_sectors, sector_size);
 
 	for (i = 0; i < erased_sectors; i++)
-		bm_spi_flash_erase_sector(ctrl_base, base + i * sector_size);
+		bm_spi_flash_erase_sector(mem_rw_ops.ctrl_base, base + i * sector_size);
 
-	fw_sp_read_test(ctrl_base, base);
+	fw_sp_read_test(mem_rw_ops.ctrl_base, base);
 	INFO("--program boot fw, page size %d\n", SPI_FLASH_BLOCK_SIZE);
 
 	off = 0;
@@ -726,12 +689,12 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 		if (xfer_size < SPI_MAX_FIFO_DEPTH)
 			xfer_size = SPI_MAX_FIFO_DEPTH;
 
-		if (do_page_program(ctrl_base, src_buf + off, base + off, xfer_size) != 0) {
+		if (do_page_program(mem_rw_ops.ctrl_base, src_buf + off, base + off, xfer_size) != 0) {
 			ERROR("page prog failed @ 0x%x\n", base + off);
 			return -1;
 		}
 
-		spi_data_read(ctrl_base, cmp_buf, base + off, xfer_size);
+		spi_data_read(mem_rw_ops.ctrl_base, cmp_buf, base + off, xfer_size);
 		cmp_ret = memcmp(src_buf + off, cmp_buf, xfer_size);
 		if (cmp_ret != 0) {
 			ERROR("memcmp failed\n");
@@ -747,7 +710,8 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 	printf("\n");
 
 	INFO("--program boot fw success\n");
-	fw_sp_read_test(ctrl_base, base);
+	fw_sp_read_test(mem_rw_ops.ctrl_base, base);
+
 	return 0;
 }
 
@@ -755,24 +719,26 @@ int bm_spi_flash_write_status(uint16_t value)
 {
 	uint32_t id, spi_status, wait = 0;
 
-	id = bm_spi_read_id(ctrl_base);
-	if (id != SPI_ID_GD25LQ128) {
+	id = bm_spi_read_id(mem_rw_ops.ctrl_base);
+	if ((id != SPI_ID_GD25LQ128) && (id != SPI_ID_M25P128)) {
 		ERROR("unrecognized flash ID 0x%x\n", id);
 		return -EINVAL;
 	}
-	spi_status = spi_read_status(ctrl_base) | (spi_read_status_high(ctrl_base) << 8);
+	spi_status = spi_read_status(mem_rw_ops.ctrl_base) |
+		(spi_read_status_high(mem_rw_ops.ctrl_base) << 8);
 	INFO("status before: 0x%x\n", spi_status);
-	spi_write_en(ctrl_base);
-	spi_status = spi_read_status(ctrl_base);
+	spi_write_en(mem_rw_ops.ctrl_base);
+	spi_status = spi_read_status(mem_rw_ops.ctrl_base);
 	if ((spi_status & SPI_STATUS_WEL) == 0) {
 		ERROR("write en failed, get status: 0x%x\n", spi_status);
 		return -1;
 	}
-	spi_write_status(ctrl_base, value);
+	spi_write_status(mem_rw_ops.ctrl_base, value);
 
 	while (1) {
 		mdelay(100);
-		spi_status = spi_read_status(ctrl_base) | (spi_read_status_high(ctrl_base) << 8);
+		spi_status = spi_read_status(mem_rw_ops.ctrl_base) |
+			(spi_read_status_high(mem_rw_ops.ctrl_base) << 8);
 		if (((spi_status & SPI_STATUS_WIP) == 0) || (wait > 30)) { // 3s, spec 0.15~1s
 			VERBOSE("sector erase done, get status: 0x%x, wait: %d\n", spi_status, wait);
 			break;

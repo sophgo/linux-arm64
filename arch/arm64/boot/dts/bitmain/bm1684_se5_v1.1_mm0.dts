@@ -1,5 +1,11 @@
 #include "bm1684_se5_v1.1.dts"
 
+/ {
+	info {
+		file-name = "bm1684_se5_v1.1_mm0.dts";
+	};
+};
+
 &vpu_reserved {
 	reg = <0x4 0x00000000 0x0 0x08000000>; // 128M, for VPU firmware
 	no-map;

@@ -27,3 +27,9 @@
 &clp890 {
 	status = "disabled";
 };
+
+/ {
+	info {
+		file-name = "bm1684_sm5m_v3.1_tb.dts";
+	};
+};

@@ -2,6 +2,12 @@
 #include "bm1684_mm_6g.dtsi"
 #include "bm1684_sm5_tb.dtsi"
 
+/ {
+	info {
+		file-name = "bm1684_cust_v1.4.dts";
+	};
+};
+
 &soc_tpuclk440m_trip {
 	temperature = <95000>;
 };

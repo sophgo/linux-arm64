@@ -867,9 +867,19 @@
 				<GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>,
 				<GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>,
 				<GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 55 IRQ_TYPE_LEVEL_HIGH>;
+				<GIC_SPI 55 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 122 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "msi0", "msi1", "msi2", "msi3",
-				  "msi4", "msi5", "msi6", "msi7";
+				  "msi4", "msi5", "msi6", "msi7",
+				  "msi8", "msi9", "msi10", "msi11",
+				  "msi12", "msi13", "msi14", "msi15";
 
 		/*
 		 * WARNING: IRQ48 conflicts with TPU driver, and

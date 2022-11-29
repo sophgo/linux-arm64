@@ -1,5 +1,11 @@
 #include "bm1684_sm5_v1.1_rb.dts"
 
+/ {
+	info {
+		file-name = "bm1684_sm5_v1.2_rb.dts";
+	};
+};
+
 &soc_tpuclk440m_trip {
 	temperature = <95000>;
 };

@@ -1,3 +1,9 @@
 #include "bm1684.dtsi"
 #include "bm1684_mm_12g.dtsi"
 #include "bm1684_se5.dtsi"
+
+/ {
+	info {
+		file-name = "bm1684_se5_v1.1.dts";
+	};
+};

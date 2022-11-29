@@ -221,7 +221,6 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 			sophgo_autoneg = "enabled";
 	} else {
 		sophgo_autoneg = "enabled";
-		dev_info(&phydev->mdio.dev, "sophgo workaround failed!\n");
 	}
 
 	if (!strcmp(sophgo_autoneg, "disable")) {

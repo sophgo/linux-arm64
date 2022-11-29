@@ -101,22 +101,38 @@
 size_t spi_flash_read_blocks(int lba, uintptr_t buf, size_t size);
 size_t spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size);
 
-void bm_spi_init(unsigned long base);
+void bm_spi_init(uint64_t base);
+void bm_spi_uninit(void);
 int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size);
-uint32_t bm_spi_read_id(unsigned long spi_base);
+uint32_t bm_spi_read_id(uint64_t spi_base);
 int bm_spi_flash_write_status(uint16_t value);
 
-void bm_spi_flash_read_sector(unsigned long spi_base, uint32_t addr, uint8_t *buf);
-int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr);
-int bm_spi_flash_program_sector(unsigned long spi_base, uint32_t addr);
+void bm_spi_flash_read_sector(uint64_t  spi_base, uint32_t addr, uint8_t *buf);
+int bm_spi_flash_erase_sector(uint64_t spi_base, uint32_t addr);
+int bm_spi_flash_program_sector(uint64_t spi_base, uint32_t addr);
 
-void *devm_map(unsigned long addr, int len);
-void devm_unmap(void *virt_addr, int len);
+enum bm_rw_type {
+	MEM_IO_RW,
+	DBG_I2C_RW,
+};
+
+struct bm_memory_ops {
+	uint64_t ctrl_base;
+	enum bm_rw_type rw_type;
+	void* (*init)(uint64_t addr);
+	void (*relase)(void *virt_addr);
+	void (*write32)(uint64_t base, uint32_t val);
+	uint32_t (*read32)(uint64_t base);
+	void (*write8)(uint64_t base, uint8_t val);
+	uint8_t (*read8)(uint64_t base);
+};
 
 enum {
 	BM1684 = 0x16840000,
 	BM1684X = 0x16860000,
 };
 uint32_t bm_get_chip_id(void);
+void set_memory_rw_dbgi2c(void);
+int get_memory_rw_type(void);
 
 #endif	/* __BM_SPI_H__ */

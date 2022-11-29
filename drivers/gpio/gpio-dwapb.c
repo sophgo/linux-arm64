@@ -666,6 +666,9 @@ static int dwapb_gpio_probe(struct platform_device *pdev)
 	int err;
 	struct device *dev = &pdev->dev;
 	struct dwapb_platform_data *pdata = dev_get_platdata(dev);
+#if defined(CONFIG_ARCH_BITMAIN) || defined(CONFIG_ARCH_SOPHGO)
+	struct clk *intr_clk, *db_clk;
+#endif
 
 	if (!pdata) {
 		pdata = dwapb_gpio_get_pdata(dev);
@@ -697,9 +700,12 @@ static int dwapb_gpio_probe(struct platform_device *pdev)
 	gpio->regs = devm_platform_ioremap_resource(pdev, 0);
 	if (IS_ERR(gpio->regs))
 		return PTR_ERR(gpio->regs);
-
 	/* Optional bus clock */
+#if defined(CONFIG_ARCH_BITMAIN) || defined(CONFIG_ARCH_SOPHGO)
+	gpio->clk = devm_clk_get(&pdev->dev, "base_clk");
+#else
 	gpio->clk = devm_clk_get(&pdev->dev, "bus");
+#endif
 	if (!IS_ERR(gpio->clk)) {
 		err = clk_prepare_enable(gpio->clk);
 		if (err) {
@@ -707,6 +713,26 @@ static int dwapb_gpio_probe(struct platform_device *pdev)
 			return err;
 		}
 	}
+
+#if defined(CONFIG_ARCH_BITMAIN) || defined(CONFIG_ARCH_SOPHGO)
+	intr_clk = devm_clk_get(&pdev->dev, "intr_clk");
+	if (!IS_ERR(intr_clk)) {
+		err = clk_prepare_enable(intr_clk);
+		if (err) {
+			dev_err(dev, "failed to enable intr clock\n");
+			goto out_unregister;
+		}
+	}
+
+	db_clk = devm_clk_get(&pdev->dev, "db_clk");
+	if (!IS_ERR(db_clk)) {
+		err = clk_prepare_enable(db_clk);
+		if (err) {
+			dev_err(dev, "failed to enable db clock\n");
+			goto out_unregister;
+		}
+	}
+#endif
 
 	gpio->flags = 0;
 	if (dev->of_node) {

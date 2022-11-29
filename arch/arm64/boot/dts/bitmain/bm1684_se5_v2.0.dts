@@ -3,6 +3,10 @@
 #include "bm1684_se5.dtsi"
 
 / {
+	info {
+		file-name = "bm1684_se5_v2.0.dts";
+	};
+
 	i2c@5001C000 {
 		/delete-node/ bm16xxpic@6e;
 	};

@@ -2,6 +2,12 @@
 #include "bm1684_mm_12g.dtsi"
 #include "bm1684_sm5_rb.dtsi"
 
+/ {
+	info {
+		file-name = "bm1684_sm5m_v0.1_rb.dts";
+	};
+};
+
 &i2c1 {
 	/delete-node/ tmp451@6b;
 

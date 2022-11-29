@@ -112,6 +112,10 @@ static void stmmac_exit_fs(struct net_device *dev);
 
 #define STMMAC_COAL_TIMER(x) (jiffies + usecs_to_jiffies(x))
 
+#ifdef CONFIG_ARCH_BITMAIN
+static char *ifname = "eth%d";
+#endif
+
 /**
  * stmmac_verify_args - verify the driver parameters.
  * Description: it checks the driver parameters and set a default in case of
@@ -4659,7 +4663,11 @@ int stmmac_dvr_probe(struct device *device,
 		netdev_err(ndev, "failed to setup phy (%d)\n", ret);
 		goto error_phy_setup;
 	}
-
+#ifdef CONFIG_ARCH_BITMAIN
+	ret = dev_alloc_name(ndev, ifname);
+	if (ret < 0)
+		pr_err("failed to alloc name %s\n", ifname);
+#endif
 	ret = register_netdev(ndev);
 	if (ret) {
 		dev_err(priv->device, "%s: ERROR %i registering the device\n",

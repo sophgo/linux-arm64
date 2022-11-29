@@ -411,8 +411,13 @@ EXPORT_SYMBOL(ether_setup);
 struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
 				      unsigned int rxqs)
 {
+#ifdef CONFIG_ARCH_BITMAIN
+	return alloc_netdev_mqs(sizeof_priv, "enp0s%d", NET_NAME_UNKNOWN,
+				ether_setup, txqs, rxqs);
+#else
 	return alloc_netdev_mqs(sizeof_priv, "eth%d", NET_NAME_UNKNOWN,
 				ether_setup, txqs, rxqs);
+#endif
 }
 EXPORT_SYMBOL(alloc_etherdev_mqs);
 

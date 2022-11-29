@@ -65,4 +65,8 @@
 	bmcpu {
 		status = "okay";
 	};
+
+	info {
+		file-name = "bm1684_sc5_ep.dts";
+	};
 };

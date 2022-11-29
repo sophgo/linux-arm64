@@ -213,6 +213,7 @@ static int top_intc_set_affinity(struct irq_data *d,
 	struct top_intc_data *data  = irq_data_get_irq_chip_data(d);
 	struct irq_data *gic_irq_data = data->gic_irq_datas[d->hwirq];
 
+	irq_data_update_effective_affinity(d, mask);
 	if (gic_irq_data->chip->irq_set_affinity)
 		return gic_irq_data->chip->irq_set_affinity(gic_irq_data, mask, force);
 	else
