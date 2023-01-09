@@ -128,7 +128,7 @@ fl2000_device_probe(
 		kref_init(&dev_ctx->kref);
 	}
 	else {
-		kref_get(&dev_ctx->kref);
+		kref_get_unless_zero(&dev_ctx->kref);
 	}
 
 	dev_ctx->usb_dev = usb_dev;
