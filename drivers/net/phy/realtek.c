@@ -214,11 +214,25 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 #ifdef CONFIG_ARCH_BITMAIN
 	np = of_find_node_by_name(of_root, "eth-sophgo-config");
 	if (np) {
+		u32 val;
+
 		if (!of_property_read_string(np, "autoneg", &sophgo_autoneg))
 			dev_info(&phydev->mdio.dev, "sophgo workaround, autoneg %s, speed 10M/s\n",
 				 sophgo_autoneg);
 		else
 			sophgo_autoneg = "enabled";
+
+		/* LED */
+		if (!of_property_read_u32(np, "led", &val)) {
+			dev_info(&phydev->mdio.dev, "sophgo fixup led 0x%04x\n", val);
+			phy_write_paged(phydev, 0xd04, 0x10, (u16)val);
+		}
+
+		/* CLKOUT */
+		if (!of_property_read_u32(np, "clkout", &val)) {
+			dev_info(&phydev->mdio.dev, "sophgo fixup clkout 0x%04x\n", val);
+			phy_write_paged(phydev, 0xd05, 0x11, (u16)val);
+		}
 	} else {
 		sophgo_autoneg = "enabled";
 	}
