@@ -19,8 +19,20 @@
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
 #include <linux/reset.h>
+#ifdef CONFIG_ARCH_BITMAIN
+#include <linux/sched/clock.h>
+#endif
 
 #include "i2c-designware-core.h"
+
+#ifdef CONFIG_ARCH_BITMAIN
+static int i2c_dw_irq_handler_master(struct dw_i2c_dev *dev);
+
+static inline int i2c_dw_is_polling_mode(struct dw_i2c_dev *dev)
+{
+	return dev->irq < 0;
+}
+#endif
 
 static void i2c_dw_configure_fifo_master(struct dw_i2c_dev *dev)
 {
@@ -421,7 +433,11 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 {
 	struct dw_i2c_dev *dev = i2c_get_adapdata(adap);
 	int ret;
-
+#ifdef CONFIG_ARCH_BITMAIN
+	spinlock_t lock;
+	unsigned long flag;
+	u64 start_time, current_time, timeout;
+#endif
 	dev_dbg(dev->dev, "%s: msgs: %d\n", __func__, num);
 
 	pm_runtime_get_sync(dev->dev);
@@ -452,7 +468,40 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 
 	/* Start the transfers */
 	i2c_dw_xfer_init(dev);
-
+#ifdef CONFIG_ARCH_BITMAIN
+	if (i2c_dw_is_polling_mode(dev)) {
+		timeout = (u64)adap->timeout * 1000000000 / HZ;
+		spin_lock_init(&lock);
+		spin_lock_irqsave(&lock, flag);
+		start_time = local_clock();
+		/* critical work */
+		while (!try_wait_for_completion(&dev->cmd_complete)) {
+			i2c_dw_irq_handler_master(dev);
+			current_time = local_clock();
+			if (current_time - start_time > timeout) {
+				spin_unlock_irqrestore(&lock, flag);
+				dev_err(dev->dev, "controller timed out\n");
+				/* i2c_dw_init implicitly
+				 * disables the adapter
+				 */
+				i2c_dw_init_master(dev);
+				ret = -ETIMEDOUT;
+				goto done;
+			}
+		}
+		spin_unlock_irqrestore(&lock, flag);
+	} else {
+		/* Wait for tx to complete */
+		if (!wait_for_completion_timeout(&dev->cmd_complete,
+						 adap->timeout)) {
+			dev_err(dev->dev, "controller timed out\n");
+			/* i2c_dw_init implicitly disables the adapter */
+			i2c_dw_init_master(dev);
+			ret = -ETIMEDOUT;
+			goto done;
+		}
+	}
+#else
 	/* Wait for tx to complete */
 	if (!wait_for_completion_timeout(&dev->cmd_complete, adap->timeout)) {
 		dev_err(dev->dev, "controller timed out\n");
@@ -462,7 +511,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 		ret = -ETIMEDOUT;
 		goto done;
 	}
-
+#endif
 	/*
 	 * We must disable the adapter before returning and signaling the end
 	 * of the current transfer. Otherwise the hardware might continue
@@ -717,6 +766,17 @@ int i2c_dw_probe(struct dw_i2c_dev *dev)
 	}
 
 	i2c_dw_disable_int(dev);
+#ifdef CONFIG_ARCH_BITMAIN
+	if (!i2c_dw_is_polling_mode(dev)) {
+		ret = devm_request_irq(dev->dev, dev->irq, i2c_dw_isr, irq_flags,
+					dev_name(dev->dev), dev);
+		if (ret) {
+			dev_err(dev->dev, "failure requesting irq %i: %d\n",
+				dev->irq, ret);
+			return ret;
+		}
+	}
+#else
 	ret = devm_request_irq(dev->dev, dev->irq, i2c_dw_isr, irq_flags,
 			       dev_name(dev->dev), dev);
 	if (ret) {
@@ -724,7 +784,7 @@ int i2c_dw_probe(struct dw_i2c_dev *dev)
 			dev->irq, ret);
 		return ret;
 	}
-
+#endif
 	ret = i2c_dw_init_recovery_info(dev);
 	if (ret)
 		return ret;

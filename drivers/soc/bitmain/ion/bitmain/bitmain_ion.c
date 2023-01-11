@@ -279,6 +279,18 @@ exit:
 	return 0;
 }
 
+void bm_flush_dcache_area(void *addr, size_t size)
+{
+	__flush_dcache_area(addr, size);
+}
+EXPORT_SYMBOL(bm_flush_dcache_area);
+
+void bm_inval_dcache_area(void *addr, size_t size)
+{
+	__inval_dcache_area(addr, size);
+}
+EXPORT_SYMBOL(bm_inval_dcache_area);
+
 long bitmain_ion_ioctl(struct ion_device *dev, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
