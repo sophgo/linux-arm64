@@ -260,11 +260,29 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	static const int supported_speeds[] = {
 		0, 100000, 400000, 1000000, 3400000
 	};
+#ifdef CONFIG_ARCH_BITMAIN
+	int is_slave_mode = false;
 
+#ifdef CONFIG_I2C_SLAVE
+	is_slave_mode = i2c_detect_slave_mode(&pdev->dev);
+#endif
+#endif
 	irq = platform_get_irq(pdev, 0);
+#ifdef CONFIG_ARCH_BITMAIN
+	if (is_slave_mode && irq < 0) {
+		dev_err(&pdev->dev,
+		"cannot get irq, slave mode do not support polling mode\n");
+		return irq;
+	}
+#else
 	if (irq < 0)
 		return irq;
+#endif
 
+#ifdef CONFIG_ARCH_BITMAIN
+	dev_info(&pdev->dev, "use %s mode\n",
+		 irq < 0 ? "polling" : "interrupt");
+#endif
 	dev = devm_kzalloc(&pdev->dev, sizeof(struct dw_i2c_dev), GFP_KERNEL);
 	if (!dev)
 		return -ENOMEM;
@@ -336,8 +354,11 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	ret = i2c_dw_probe_lock_support(dev);
 	if (ret)
 		goto exit_reset;
-
+#ifdef CONFIG_ARCH_BITMAIN
+	if (is_slave_mode)
+#else
 	if (i2c_detect_slave_mode(&pdev->dev))
+#endif
 		i2c_dw_configure_slave(dev);
 	else
 		i2c_dw_configure_master(dev);

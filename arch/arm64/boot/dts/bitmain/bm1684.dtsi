@@ -433,7 +433,6 @@
 		clocks = <&div_clk GATE_CLK_APB_I2C>;
 		clock-names = "pclk";
 		reg = <0x0 0x5001E000 0x0 0x1000>;
-		interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
 		clock-frequency = <100000>;
 		resets = <&rst RST_I2C2>;
 		reset-names = "i2c2";
