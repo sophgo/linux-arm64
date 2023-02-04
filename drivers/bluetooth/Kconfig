@@ -19,6 +19,8 @@ config BT_QCA
 	tristate
 	select FW_LOADER
 
+source "drivers/bluetooth/rtl8822bu_usb/Kconfig"
+
 config BT_HCIBTUSB
 	tristate "HCI USB driver"
 	depends on USB

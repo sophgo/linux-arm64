@@ -1,0 +1,4 @@
+config BT_RTL8822BU
+	tristate "RTL8822BU Bluetooth USB driver"
+	depends on USB && !BT_HCIBTUSB
+	select FW_LOADER
