@@ -4003,7 +4003,7 @@ int sdhci_setup_host(struct sdhci_host *host)
 	    ((host->flags & SDHCI_USE_ADMA) ||
 	     !(host->flags & SDHCI_USE_SDMA) || host->v4_mode) &&
 	     !(host->quirks2 & SDHCI_QUIRK2_ACMD23_BROKEN)) {
-		host->flags |= SDHCI_AUTO_CMD23;
+		//host->flags |= SDHCI_AUTO_CMD23;
 		DBG("Auto-CMD23 available\n");
 	} else {
 		DBG("Auto-CMD23 unavailable\n");
