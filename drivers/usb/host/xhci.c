@@ -427,10 +427,14 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
 		free_irq(hcd->irq, hcd);
 	hcd->irq = 0;
 
+#ifdef CONFIG_ARCH_BITMAIN
+	ret = xhci_setup_msi(xhci);
+#else
 	ret = xhci_setup_msix(xhci);
 	if (ret)
 		/* fall back to msi*/
 		ret = xhci_setup_msi(xhci);
+#endif
 
 	if (!ret) {
 		hcd->msi_enabled = 1;

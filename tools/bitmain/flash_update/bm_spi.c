@@ -475,7 +475,7 @@ int bm_spi_flash_erase_sector(uint64_t spi_base, uint32_t addr)
 
 	spi_write_en(spi_base);
 	spi_status = spi_read_status(spi_base);
-	printf("eraseing one sector.....\r\n");
+	printf("erasing one sector.....\r\n");
 	if ((spi_status & SPI_STATUS_WEL) == 0) {
 		ERROR("write en failed, get status: 0x%x\n", spi_status);
 		return -1;

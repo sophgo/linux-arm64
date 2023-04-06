@@ -611,6 +611,18 @@
 		clock-names = "pcie", "cdma", "smmu";
 	};
 
+	veth:  veth {
+		compatible = "sophgon, veth";
+		reg = <0x00000000 0x0201be80 0x00000000 0x00000080>,
+			  <0x00000000 0x50010000 0x00000000 0x00008000>,
+			  <0x00000000 0x50023000 0x00000000 0x00001000>,
+			  <0x00000000 0x58003000 0x00000000 0x00001000>;
+		reg-names = "shm_reg", "top_misc", "intc_cfg", "cdma_cfg";
+		interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "rx";
+		status = "disabled";
+	};
+
 	vpp: vpp@50070000 {
 		compatible = "bitmain, bitmain-vpp";
 		reg = <0x0 0x50070000 0x0 0x1000>,//sys0 vpp base

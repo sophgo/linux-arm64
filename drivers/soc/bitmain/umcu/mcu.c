@@ -176,7 +176,7 @@ const struct mcu_features mcu_list[] = {
 	{
 		0xc, "SM5M RB", "BM1684", "STM32",
 		0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x08, 0x0a, 0x0b, 0x60,
-		0x24, -1, -1, -1, MCU_REG_CRITICAL_ACTIONS,
+		0x24, -1, 0x3d, 0x61, MCU_REG_CRITICAL_ACTIONS,
 		MCU_REG_CRITICAL_TEMP, MCU_REG_REPOWERON_TEMP,
 		MCU_REG_KEEP_DDR_POWERON,
 		{

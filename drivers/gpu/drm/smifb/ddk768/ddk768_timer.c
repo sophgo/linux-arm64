@@ -189,6 +189,7 @@ void timerWait(
 )
 {
     unsigned long ticks;
+	unsigned long retry = 1000;
 
     // Limit  max delay to 10 seconds 
     if (microSeconds > 10000000)
@@ -200,7 +201,7 @@ void timerWait(
     //Third parameter to timerStart is 1.
     timerStart(timer, ticks, 1);
 
-    while (!timerRawIntPending(timer));
+    while (!timerRawIntPending(timer) && --retry);
 
     timerStop(timer);
 }
@@ -214,12 +215,13 @@ void timerWaitTicks(
     unsigned long ticks
 )
 {
+	unsigned long retry = 1000;
     //Counter is 28 bits only.
     ticks &= 0xFFFFFFF;
 
     timerStart(timer, ticks, 0);
 
-    while (!timerRawIntPending(timer));
+    while (!timerRawIntPending(timer) && --retry);
 
     timerStop(timer);
 }

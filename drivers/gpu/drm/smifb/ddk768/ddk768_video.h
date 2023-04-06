@@ -65,6 +65,41 @@ typedef enum _video_ctrl_t
 video_ctrl_t;
 
 
+
+
+
+
+#define PITCH(width, bpp)               (((width) * (bpp) / 8 + 15) & ~15)
+
+typedef enum _file_format
+{
+    FFT_RGB565 = 0 ,
+    FFT_RGBx888
+}file_format;
+
+typedef struct YUV_BUF_ADDR
+{
+    unsigned long bufYAddr;
+    unsigned long bufCbAddr;
+    unsigned long bufCrAddr;
+} YUV_BUF_ADDR, *PYUV_BUF_ADDR;
+typedef struct BLIT_BLK
+{
+    unsigned long Base;
+    unsigned long Pitch;
+    unsigned long Bpp;          /* Only needed for the destination surface */
+    unsigned long x;
+    unsigned long y;
+    unsigned long Width;
+    unsigned long Height;
+} BLIT_BLK, *PBLIT_BLK;
+
+
+
+
+
+
+
 /****************************************************************************
    Function prototype 
  ****************************************************************************/
@@ -561,4 +596,11 @@ void startVideo(unsigned dispCtrl);
  */
 void stopVideo(unsigned dispCtrl);
 
+int SM768_setOverlay(
+    disp_control_t dispControl, /* Channel 0 or Channel 1) */
+    PBLIT_BLK src,  /* Only need: source Width & Height, Pitch */
+    PYUV_BUF_ADDR SrcAddr,   /* Y U V source base address */
+    PBLIT_BLK dest,  /* Needed input value: destination X & Y & Width & Height */
+    file_format srcFormat
+);
 

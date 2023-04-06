@@ -7,7 +7,7 @@
  *
  */
 
-#include <drm/drmP.h>
+#include <drm/drm_modes.h>
 
 #include "ddk768/ddk768_mode.h"
 #include "ddk768/ddk768_help.h"
@@ -18,6 +18,16 @@
 #include "ddk768/ddk768_cursor.h"
 #include "ddk768/ddk768_video.h"
 #include "ddk768/ddk768_hdmi.h"
+#include "ddk768/ddk768_pwm.h"
+#include "ddk768/ddk768_swi2c.h"
+#include "ddk768/ddk768_hwi2c.h"
+
+#include <linux/version.h>
+
+
+extern int lcd_scale;
+extern int pwm_ctrl;
+
 
 struct smi_768_register{
 	uint32_t clock_enable, pll_ctrl[3];
@@ -25,35 +35,6 @@ struct smi_768_register{
 	uint32_t primary_display_ctrl[10], lvds_ctrl, primary_hwcurs_ctrl[4];
 	uint32_t secondary_display_ctrl[10], secondary_hwcurs_ctrl[4];
 };
-
-void hw768_load_lut(int path, int offset, u32 rgb)
-{
-	if(path == 0)
-		pokeRegisterDWord(CHANNEL0_PALETTE_RAM + offset,rgb);		
-	else
-		pokeRegisterDWord(CHANNEL1_PALETTE_RAM + offset,rgb);		
-	
-}
-
-void hw768_enable_gamma(unsigned dispCtrl,unsigned long enableGammaCtrl)
-{
-
-	unsigned long value;
-	unsigned long regCtrl;
-
-	regCtrl = (dispCtrl == CHANNEL0_CTRL)? DISPLAY_CTRL : (DISPLAY_CTRL+CHANNEL_OFFSET);
-
-	value = peekRegisterDWord(regCtrl);
-	
-	if (enableGammaCtrl)
-		value = FIELD_SET(value, DISPLAY_CTRL, GAMMA, ENABLE);
-	else
-		value = FIELD_SET(value, DISPLAY_CTRL, GAMMA, DISABLE);
-		
-	pokeRegisterDWord(regCtrl, value);	  
-
-
-}
 
 
 mode_parameter_t convert_drm_mode_to_ddk_mode(struct drm_display_mode mode)
@@ -105,14 +86,50 @@ void hw768_enable_lvds(int channels)
 		value = FIELD_SET(value, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_48BIT);
 		pokeRegisterDWord(DISPLAY_CTRL + CHANNEL_OFFSET,value);
 	}
+	
+	
+	if(pwm_ctrl)
+	{
+		unsigned long pwm, divider, highCounter, lowCounter;
+
+	     	pwm = pwm_ctrl & 0xf;
+		divider = (pwm_ctrl & 0xf0) >> 4;
+	    	highCounter = (pwm_ctrl & 0xfff00) >> 8;
+		lowCounter = (pwm_ctrl & 0xfff00000) >> 20;
+
+		ddk768_pwmOpen(pwm);
+		ddk768_pwmStart(pwm, divider, highCounter, lowCounter, 0);
+	}
+
+	
 }	
+
+
+
+void ddk768_setDisplayPlaneDisableOnly(
+   disp_control_t dispControl /* Channel 0 or Channel 1) */
+)
+{
+    unsigned long ulDispCtrlAddr;
+    unsigned long ulDispCtrlReg;
+
+    ulDispCtrlAddr = (dispControl == CHANNEL0_CTRL)? DISPLAY_CTRL : (DISPLAY_CTRL+CHANNEL_OFFSET);
+    ulDispCtrlReg = peekRegisterDWord(ulDispCtrlAddr);
+
+	
+ 	ulDispCtrlReg = FIELD_SET(ulDispCtrlReg, DISPLAY_CTRL, PLANE, DISABLE)|        
+                    FIELD_SET(0, DISPLAY_CTRL, DATA_PATH, EXTENDED); 
+
+	 pokeRegisterDWord(ulDispCtrlAddr, ulDispCtrlReg);
+   
+}
+
 
 
 
 void hw768_suspend(struct smi_768_register * pSave)
 {
 
-#if 0
 	int i;
 
 	pSave->clock_enable = peekRegisterDWord(CLOCK_ENABLE);
@@ -130,14 +147,12 @@ void hw768_suspend(struct smi_768_register * pSave)
 	for (i = 0; i < 4; i++)
 		pSave->secondary_hwcurs_ctrl[i] = peekRegisterDWord(0x8000 + HWC_CONTROL + i * 4);
 
-#endif
 
 }
 
 void hw768_resume(struct smi_768_register * pSave)
 {
 
-#if 0
 	int i;
 
 	pokeRegisterDWord(CLOCK_ENABLE, pSave->clock_enable);
@@ -155,7 +170,6 @@ void hw768_resume(struct smi_768_register * pSave)
 	for (i = 0; i < 4; i++)
 		pokeRegisterDWord(0x8000 + HWC_CONTROL + i * 4, pSave->secondary_hwcurs_ctrl[i]);
 
-#endif
 }
 void hw768_set_base(int display,int pitch,int base_addr)
 {	
@@ -169,6 +183,17 @@ void hw768_set_base(int display,int pitch,int base_addr)
 
 	    /* Pitch value (Hardware people calls it Offset) */
     	pokeRegisterDWord((FB_WIDTH), FIELD_VALUE(peekRegisterDWord(FB_WIDTH), FB_WIDTH, OFFSET, pitch));
+
+		if(lcd_scale){
+				pokeRegisterDWord((VIDEO_FB_WIDTH),
+					   FIELD_VALUE(0, VIDEO_FB_WIDTH, WIDTH, pitch) |
+					   FIELD_VALUE(0, VIDEO_FB_WIDTH, OFFSET, pitch));
+		
+			   pokeRegisterDWord(VIDEO_FB_ADDRESS,
+					   FIELD_SET(0, VIDEO_FB_ADDRESS, STATUS, PENDING) |
+					   FIELD_VALUE(0, VIDEO_FB_ADDRESS, ADDRESS, base_addr));
+
+		}
 	}
 	else
 	{
@@ -195,13 +220,6 @@ int hw768_set_hdmi_mode(logicalMode_t *pLogicalMode, struct drm_display_mode mod
 	int ret = 1;
 	mode_parameter_t modeParam;
 	
-	if(pLogicalMode->x == 3840)
-	{
-		printk("Use 4K Mode!\n");
-		pLogicalMode->hz = 30;
-	}
-	else
-		pLogicalMode->hz = 60;
 	// set HDMI parameters
 	HDMI_Disable_Output();
 
@@ -211,6 +229,7 @@ int hw768_set_hdmi_mode(logicalMode_t *pLogicalMode, struct drm_display_mode mod
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw768_en_dis_interrupt(int status, int pipe)
 {
 	if(status == 0)
@@ -227,6 +246,24 @@ int hw768_en_dis_interrupt(int status, int pipe)
 	}
 	return 0;
 }
+#else
+int hw768_en_dis_interrupt(int status)
+	{
+		if(status == 0)
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, DISABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, DISABLE)); 
+		}
+		else
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, ENABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, ENABLE));  
+		}
+		return 0;
+	}
+
+#endif
+
 void hw768_HDMI_Enable_Output(void)
 {
 	HDMI_Enable_Output();
@@ -381,4 +418,84 @@ void hw768_SetPixelClockFormat(disp_control_t dispControl,unsigned int is_half)
 
     pokeRegisterDWord(ulDispCtrlAddr, ulDispCtrlReg);
 }
+
+void hw768_setgamma(disp_control_t dispCtrl, unsigned long enable, unsigned long lvds_ch)
+{
+	unsigned long value;
+	unsigned long regCtrl;
+
+	regCtrl = (dispCtrl == CHANNEL0_CTRL)? DISPLAY_CTRL 
+				: (DISPLAY_CTRL+CHANNEL_OFFSET);
+
+	value = peekRegisterDWord(regCtrl);
+	
+	if (enable)
+	    value = FIELD_SET(value, DISPLAY_CTRL, GAMMA, ENABLE);
+	else
+	    value = FIELD_SET(value, DISPLAY_CTRL, GAMMA, DISABLE);
+
+	if((lvds_ch == 2) && (dispCtrl == CHANNEL0_CTRL))   //dual channel LVDS and channel 0 gamma setting
+		value = FIELD_SET(value, DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK, ENABLE);
+	else{
+		value = FIELD_SET(value, DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK, DISABLE);
+	}
+	   	
+	pokeRegisterDWord(regCtrl, value);    
+}
+
+void hw768_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u8 lut_b[])
+{
+	unsigned int i, v;
+	unsigned long regCtrl;
+
+	regCtrl = (dispCtrl == CHANNEL0_CTRL)? PALETTE_RAM 
+				: (PALETTE_RAM+CHANNEL_OFFSET);
+
+	for (i = 0; i < size; i++) {
+		v = (lut_r[i] << 16);
+		v |= (lut_g[i] << 8);
+		v |= lut_b[i];
+		pokeRegisterDWord(regCtrl + (i * 4), v);
+	}
+}
+
+
+
+long hw768_AdaptI2CInit(struct smi_connector *smi_connector)
+{
+    if(hwi2c_en)
+    {
+        smi_connector->i2c_hw_enabled = 1;
+    }
+    else
+    {
+        smi_connector->i2c_hw_enabled = 0;      
+    }
+
+    if(smi_connector->i2c_hw_enabled)
+    {
+        return ddk768_AdaptHWI2CInit(smi_connector);
+    }
+    else
+    {
+        return ddk768_AdaptSWI2CInit(smi_connector); 
+    }
+}
+
+
+long hw768_AdaptI2CCleanBus(struct drm_connector *connector)
+{
+        struct smi_connector *smi_connector = to_smi_connector(connector);
+    
+    if(smi_connector->i2c_hw_enabled)
+    {
+        return ddk768_AdaptHWI2CCleanBus(smi_connector);
+    }
+    else
+    {
+        return ddk768_AdaptSWI2CCleanBus(smi_connector);
+    }
+}
+
+
 

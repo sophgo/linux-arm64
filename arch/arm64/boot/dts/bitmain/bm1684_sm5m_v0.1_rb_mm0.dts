@@ -1,0 +1,21 @@
+#include "bm1684_sm5m_v0.1_rb.dts"
+
+/ {
+	info {
+		file-name = "bm1684_sm5m_v0.1_rb_mm0.dts";
+	};
+};
+
+&vpu_reserved {
+	reg = <0x4 0x00000000 0x0 0x08000000>; // 128M, for VPU firmware
+	no-map;
+};
+
+&ion_for_vpp {
+	compatible = "vpp-region";
+	reg = <0x4 0x08000000 0x0 0xF8000000>; // 3.875G, for VPP/VPU/JPU
+};
+
+/delete-node/ &ion_for_vpu;
+/delete-node/ &ion_heap2;
+
