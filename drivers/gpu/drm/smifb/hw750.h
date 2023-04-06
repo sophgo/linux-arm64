@@ -145,7 +145,12 @@ void hw750_resume(struct smi_750_register * pSave);
 int hw750_check_vsync_interrupt(int path);
 void hw750_clear_vsync_interrupt(int path);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw750_en_dis_interrupt(int status, int pipe);
+#else
+int hw750_en_dis_interrupt(int status);
+#endif
+
 
 void ddk750_disable_IntMask(void);
 
@@ -157,5 +162,13 @@ int ddk750_GetDDC_9022Access(void);
 int ddk750_Release9022DDC(void);
 
 void ddk750_DoEdidRead(void);
+
+void hw750_setgamma(disp_control_t dispCtrl, unsigned long enable);
+void hw750_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u8 lut_b[]);
+
+long hw750_AdaptI2CInit(struct smi_connector *smi_connector);
+long hw750_AdaptI2CCleanBus(
+    struct drm_connector *connector
+);
 
 #endif

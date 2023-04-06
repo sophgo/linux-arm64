@@ -103,7 +103,7 @@ static int top_intc_domain_alloc(struct irq_domain *domain,
 		for (i = 0; i < nr_irqs; i++) {
 			irq_domain_set_info(domain, virq + i, hwirq + i,
 						data->chip,
-						data, handle_level_irq,
+						data, handle_edge_irq,
 						NULL, NULL);
 			data->tic_to_gic[hwirq + i] = data->gic_hwirqs[hwirq + i];
 		}
@@ -126,7 +126,7 @@ static int top_intc_domain_alloc(struct irq_domain *domain,
 
 		irq_domain_set_info(domain, virq, hwirq,
 					data->chip,
-					data, handle_level_irq,
+					data, handle_edge_irq,
 					NULL, NULL);
 
 		// explicitly set parent

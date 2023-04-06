@@ -1,0 +1,77 @@
+#include "bm1684.dtsi"
+#include "bm1684_mm_12g.dtsi"
+#include "bm1684_se5.dtsi"
+
+/ {
+	info {
+		file-name = "bm1684_se5_v2.5.dts";
+	};
+
+	i2c@5001C000 {
+		/delete-node/ bm16xxpic@6e;
+	};
+
+	fl2000-custom {
+		compatible = "fl2000-custom";
+		hpd-gpio = <&port0a 30 GPIO_ACTIVE_LOW>;
+	};
+
+	gpio-leds {
+		/delete-node/ gpio5;
+		/delete-node/ gpio6;
+
+		gpio7 {
+			label = "gpio7";
+			gpios = <&port0a 7 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	gpio-keys {
+		/delete-node/ gpio7;
+		/delete-node/ gpio30;
+
+		gpio5 {
+			label = "GPIO Key Up";
+			linux,code = <KEY_UP>;
+			gpios = <&port0a 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		gpio6 {
+			label = "GPIO Key DOWN";
+			linux,code = <KEY_DOWN>;
+			gpios = <&port0a 6 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&ethernet0 {
+	phy-wol = "support";
+};
+
+&clock_init {
+	clock-rates = \
+		<2300000000>, <330000000>, <400000000>,
+
+		<1000000000>, <1000000000>,
+		<2000000000>, <50000000>,
+		<100000000>, <100000000>,
+		<125000000>, <50000000>,
+		<25000000>, <125000000>,
+		<50000000>, <25000000>,
+		<500000000>, <25000000>,
+		<500000000>, <500000000>,
+		<200000000>, <100000000>,
+		<250000000>, <250000000>,
+		<500000000>, <500000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<100000>, <100000>, <100000>,
+
+		<330000001>,
+		<100000000>, <400000001>,
+		<2300000001>, <456250000>;
+};
+

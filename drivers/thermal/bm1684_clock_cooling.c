@@ -103,21 +103,15 @@ static int bm1684_cooling_set_cur_state(struct thermal_cooling_device *cdev,
 
 	switch (state) {
 	case 0:
-		clk_set_parent(bmcdev->tpu_mux, bmcdev->tpu_div1);
 		ret = clk_set_rate(bmcdev->tpu_clk, bmcdev->tpu_init_rate);
-		clk_set_parent(bmcdev->tpu_mux, bmcdev->tpu_div0);
 		ret |= clk_set_rate(bmcdev->cpu_clk, MAX_CPU_CLK);
 		break;
 	case 1:
-		clk_set_parent(bmcdev->tpu_mux, bmcdev->tpu_div1);
 		ret = clk_set_rate(bmcdev->tpu_clk, (bmcdev->tpu_init_rate * 4)/5); // 80% of max performance
-		clk_set_parent(bmcdev->tpu_mux, bmcdev->tpu_div0);
 		ret |= clk_set_rate(bmcdev->cpu_clk, MIN_CPU_CLK);
 		break;
 	case 2:
-		clk_set_parent(bmcdev->tpu_mux, bmcdev->tpu_div1);
 		ret = clk_set_rate(bmcdev->tpu_clk, MIN_TPU_CLK);
-		clk_set_parent(bmcdev->tpu_mux, bmcdev->tpu_div0);
 		break;
 	}
 
@@ -166,6 +160,18 @@ bm1684_cooling_device_register(struct device *dev)
 		dev_err(dev, "failed to get all clocks\n");
 		return ERR_PTR(-ENOTSUPP);
 	}
+
+	/**
+	 * In the process of switching frequency and switching mux(clk_set_rate, clk_set_parent),
+	 * there will be a moment to write illegal values to the registers of configured mux,
+	 * although this wrong value will be corrected by CCF framework later,
+	 * multiple switching will cause TPU to stop working due to unavailability of clock,
+	 * turning on tpu_div0 and tpu_div1 in advance can avoid writing illegal values to the mux registers.
+	 */
+	clk_prepare(bmcdev->tpu_div0);
+	clk_prepare(bmcdev->tpu_div1);
+	clk_enable(bmcdev->tpu_div0);
+	clk_enable(bmcdev->tpu_div1);
 
 	bmcdev->tpu_init_rate = clk_get_rate(bmcdev->tpu_clk);
 	dev_info(dev, "TPU init rate %ld\n", bmcdev->tpu_init_rate);

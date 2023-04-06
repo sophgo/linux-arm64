@@ -992,7 +992,8 @@ unsigned char ddk768_edidGetExtension(
     return 0;
 }
 
-#define EDID_TOTAL_RETRY_COUNTER            4
+#if 0
+#define EDID_TOTAL_RETRY_COUNTER            1
 /*
  *  ddk768_edidReadMonitor
  *      This function reads the EDID structure from the attached monitor
@@ -1036,7 +1037,8 @@ long ddk768_edidReadMonitorEx(
         for (offset = 0; offset < TOTAL_EDID_REGISTERS_128; offset++)
             edidBuffer[offset] = ddk768_swI2CReadReg(EDID_DEVICE_I2C_ADDRESS, (unsigned char)offset);
 #else
-			ddk768_swI2CReadReg_Continuous(EDID_DEVICE_I2C_ADDRESS, 0,TOTAL_EDID_REGISTERS_128,edidBuffer);
+			if (!ddk768_swI2CReadReg_Continuous(EDID_DEVICE_I2C_ADDRESS, 0,TOTAL_EDID_REGISTERS_128,edidBuffer))
+ 		           memset(edidBuffer, 0xFF, TOTAL_EDID_REGISTERS_128); /* read error */
 #endif
 
          	if(edidBuffer[EDID_EXTEND_BLOCK])
@@ -1045,7 +1047,8 @@ long ddk768_edidReadMonitorEx(
 				for (offset = TOTAL_EDID_REGISTERS_128; offset < TOTAL_EDID_REGISTERS_256; offset++)
                 	edidBuffer[offset] = ddk768_swI2CReadReg(EDID_DEVICE_I2C_ADDRESS, (unsigned char)offset);
 #else
-				ddk768_swI2CReadReg_Continuous(EDID_DEVICE_I2C_ADDRESS, TOTAL_EDID_REGISTERS_128,TOTAL_EDID_REGISTERS_128,edidBuffer + TOTAL_EDID_REGISTERS_128);
+				if (!ddk768_swI2CReadReg_Continuous(EDID_DEVICE_I2C_ADDRESS, TOTAL_EDID_REGISTERS_128, TOTAL_EDID_REGISTERS_128, edidBuffer + TOTAL_EDID_REGISTERS_128))
+                	memset(edidBuffer + TOTAL_EDID_REGISTERS_128, 0xFF, TOTAL_EDID_REGISTERS_128); /* read error */
 #endif
 
             	edidSize = TOTAL_EDID_REGISTERS_256;
@@ -1257,7 +1260,9 @@ long ddk768_edidHeaderReadMonitorEx(
 {
     unsigned char retry;//value,
     unsigned char edidBuffer[10];
+#ifndef READ_EDID_CONTINUOUS
     unsigned long offset;
+#endif    
 
     /* Initialize the i2c bus */
     ddk768_swI2CInit(sclGpio, sdaGpio);
@@ -1266,9 +1271,15 @@ long ddk768_edidHeaderReadMonitorEx(
     {
         DDKDEBUGPRINT((DISPLAY_LEVEL, "retry: %d\n", retry));
 
-        /* Read the EDID from the monitor. */
-        for (offset = 0; offset < HEADER_EDID_REGISTERS; offset++)
-            edidBuffer[offset] = ddk768_swI2CReadReg(EDID_DEVICE_I2C_ADDRESS, (unsigned char)offset);
+#ifndef READ_EDID_CONTINUOUS
+		/* Read the EDID from the monitor. */
+		for (offset = 0; offset < HEADER_EDID_REGISTERS; offset++)
+			edidBuffer[offset] = ddk768_swI2CReadReg(EDID_DEVICE_I2C_ADDRESS, (unsigned char)offset);
+
+#else
+		if (!ddk768_swI2CReadReg_Continuous(EDID_DEVICE_I2C_ADDRESS, 0, HEADER_EDID_REGISTERS, edidBuffer))
+			memset(edidBuffer, 0xFF, HEADER_EDID_REGISTERS); /* read error */
+#endif
 
         /* Check if the EDID header is valid. */
         if (!edidGetHeader((unsigned char *)&edidBuffer))
@@ -1337,7 +1348,7 @@ long ddk768_edidHeaderReadMonitorExHwI2C(
     return 0;
 }
 
-
+#endif
 
 /*
  *  ddk768_edidGetEstablishedTiming
