@@ -17,11 +17,14 @@
 #include "ddk750/ddk750_power.h"
 #include "ddk750/ddk750_edid.h"
 #include "ddk750/ddk750_cursor.h"
-//#include "smi_drv.h"
-//#include "hw750.h"
+#include "ddk750/ddk750_swi2c.h"
+#include "ddk750/ddk750_hwi2c.h"
+
+
 #ifdef USE_HDMICHIP
 #include "ddk750/ddk750_sii9022.h"
 #endif
+#include <linux/version.h>
 
 
 struct smi_750_register{
@@ -218,6 +221,9 @@ void hw750_set_dpms(int display,int state)
 		setPath(CRT_PATH, SECONDARY_CTRL, state);
 	}
 }
+
+ 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw750_en_dis_interrupt(int status, int pipe)
 {
 	if(status == 0)
@@ -233,8 +239,25 @@ int hw750_en_dis_interrupt(int status, int pipe)
 		FIELD_SET(0, INT_MASK, PRIMARY_VSYNC, ENABLE));
 	}
 	return 0;
-}
 
+}
+#else
+int hw750_en_dis_interrupt(int status)
+	{
+		if(status == 0)
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, SECONDARY_VSYNC, DISABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, PRIMARY_VSYNC, DISABLE)); 
+		}
+		else
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, SECONDARY_VSYNC, ENABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, PRIMARY_VSYNC, ENABLE));  
+		}
+		return 0;
+	}
+
+#endif
 
 
 int hw750_check_vsync_interrupt(int path)
@@ -289,4 +312,84 @@ void ddk750_disable_IntMask(void)
 	
     pokeRegisterDWord(INT_MASK, 0);
 }
+
+
+void hw750_setgamma(disp_control_t dispCtrl, unsigned long enable)
+{
+	unsigned long value;
+	unsigned long regCtrl;
+
+
+
+	if(dispCtrl == PRIMARY_CTRL)
+		regCtrl = PRIMARY_DISPLAY_CTRL;
+	else
+		regCtrl = SECONDARY_DISPLAY_CTRL;
+
+
+	value = peekRegisterDWord(regCtrl);
+	
+	if (enable)
+	    value = FIELD_SET(value, PRIMARY_DISPLAY_CTRL, GAMMA, ENABLE);
+	else
+	    value = FIELD_SET(value, PRIMARY_DISPLAY_CTRL, GAMMA, DISABLE);
+	    
+	pokeRegisterDWord(regCtrl, value);    
+}
+
+void hw750_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u8 lut_b[])
+{
+	unsigned int i, v;
+	unsigned long regCtrl;
+
+	if(dispCtrl == PRIMARY_CTRL)
+		regCtrl = PRIMARY_PALETTE_RAM;
+	else
+		regCtrl = SECONDARY_PALETTE_RAM;
+
+	for (i = 0; i < size; i++) {
+		v = (lut_r[i] << 16);
+		v |= (lut_g[i] << 8);
+		v |= lut_b[i];
+		pokeRegisterDWord(regCtrl + (i * 4), v);
+	}
+}
+
+
+long hw750_AdaptI2CInit(struct smi_connector *smi_connector)
+{
+    if(hwi2c_en && (smi_connector->base.connector_type == DRM_MODE_CONNECTOR_DVII))
+    {
+        smi_connector->i2c_hw_enabled = 1;
+    }
+    else
+    {
+        smi_connector->i2c_hw_enabled = 0;      
+    }
+
+    if(smi_connector->i2c_hw_enabled)
+    {
+        return ddk750_AdaptHWI2CInit(smi_connector);
+    }
+    else
+    {
+        return ddk750_AdaptSWI2CInit(smi_connector); 
+    }
+}
+
+
+long hw750_AdaptI2CCleanBus(struct drm_connector *connector)
+{
+    struct smi_connector *smi_connector = to_smi_connector(connector);
+    
+    if(smi_connector->i2c_hw_enabled)
+    {
+        return ddk750_AdaptHWI2CCleanBus(smi_connector);
+    }
+
+    return 0;
+}
+
+
+
 

@@ -7,7 +7,7 @@
  * more details.
  */
 
-
+#include "smi_drv.h"
 
 #include <linux/init.h>
 #include <linux/interrupt.h>
@@ -32,13 +32,13 @@
 
 
 
-#include <drm/drmP.h>
+//#include <drm/drmP.h>
 #include <drm/drm_crtc_helper.h>
 
-#include "smi_drv.h"
+
 #include "hw768.h"
 
-
+#include "smi_dbg.h"
 
 struct sm768chip *chip_irq_id=NULL;/*chip_irq_id is use for request and free irq*/
 int use_wm8978 = 0;
@@ -180,9 +180,8 @@ static int snd_falconi2s_put_hw_play_volume(struct snd_kcontrol *kcontrol,
 
 	struct sm768chip *chip = kcontrol->private_data;
 	int changed = 0;
-	unsigned short UNUSED(Reg_Vol);
 	u8 vol;
-	dbg_msg("snd_falconi2s_put_hw_volume:%d\n",ucontrol->value.integer.value[0]);
+	dbg_msg("snd_falconi2s_put_hw_volume:%ld\n", ucontrol->value.integer.value[0]);
 
 	if (chip->playback_vol!= ucontrol->value.integer.value[0]) {
 		vol = chip->playback_vol = ucontrol->value.integer.value[0];
@@ -216,9 +215,8 @@ static int snd_falconi2s_put_hw_capture_volume(struct snd_kcontrol *kcontrol,
 {
 	struct sm768chip *chip = kcontrol->private_data;
 	int changed = 0;
-	unsigned short UNUSED(Reg_Vol);
 	u8 vol;
-	dbg_msg("snd_falconi2s_put_hw_volume:%d\n",ucontrol->value.integer.value[0]);
+	dbg_msg("snd_falconi2s_put_hw_volume:%ld\n", ucontrol->value.integer.value[0]);
 
 
 	if (chip->capture_vol!= ucontrol->value.integer.value[0]) {
@@ -261,37 +259,36 @@ static struct snd_kcontrol_new falconi2s_vol[] = {
   
 /* hardware definition */
 static struct snd_pcm_hardware snd_falconi2s_playback_hw = {
-	.info = (SNDRV_PCM_INFO_MMAP |
-                   SNDRV_PCM_INFO_INTERLEAVED |
-                   SNDRV_PCM_INFO_BLOCK_TRANSFER |
-                   SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =		  SNDRV_PCM_FMTBIT_S16_LE,
-	.rates =			  SNDRV_PCM_RATE_48000,//this value means both of 44100 and 48000 can work 
-	.rate_min =		  48000,
-	.rate_max =		  48000,
-	.channels_min =	  2,
-	.channels_max =	  2,
-	.buffer_bytes_max = P_PERIOD_BYTE*P_PERIOD_MAX,//actually total length should less than 4096*1024.
-	.period_bytes_min = P_PERIOD_BYTE ,
+	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_BLOCK_TRANSFER |
+		 SNDRV_PCM_INFO_MMAP_VALID),
+	.formats = SNDRV_PCM_FMTBIT_S16_LE,
+	//this value means both of 44100 and 48000 can work
+	.rates = SNDRV_PCM_RATE_48000,
+	.rate_min = 48000,
+	.rate_max = 48000,
+	.channels_min = 2,
+	.channels_max = 2,
+	//actually total length should less than 4096*1024.
+	.buffer_bytes_max = P_PERIOD_BYTE * P_PERIOD_MAX,
+	.period_bytes_min = P_PERIOD_BYTE,
 	.period_bytes_max = P_PERIOD_BYTE,
 	.periods_min =	  P_PERIOD_MIN,
 	.periods_max =	  P_PERIOD_MAX,
 };
 
-  /* hardware definition */
+/* hardware definition */
 static struct snd_pcm_hardware snd_falconi2s_capture_hw = {
-	.info = (SNDRV_PCM_INFO_MMAP |
-                   SNDRV_PCM_INFO_INTERLEAVED |
-                   SNDRV_PCM_INFO_BLOCK_TRANSFER |
-                   SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =          SNDRV_PCM_FMTBIT_S16_LE,
-	.rates =            SNDRV_PCM_RATE_48000,
-	.rate_min =         48000,
-	.rate_max =         48000,
-	.channels_min =     2,
-	.channels_max =     2,
-	.buffer_bytes_max = P_PERIOD_BYTE*P_PERIOD_MAX,//actually total length should less than 4096*1024.
-	.period_bytes_min = P_PERIOD_BYTE ,
+	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_BLOCK_TRANSFER |
+		 SNDRV_PCM_INFO_MMAP_VALID),
+	.formats = SNDRV_PCM_FMTBIT_S16_LE,
+	.rates = SNDRV_PCM_RATE_48000,
+	.rate_min = 48000,
+	.rate_max = 48000,
+	.channels_min = 2,
+	.channels_max = 2,
+	//actually total length should less than 4096*1024.
+	.buffer_bytes_max = P_PERIOD_BYTE * P_PERIOD_MAX,
+	.period_bytes_min = P_PERIOD_BYTE,
 	.period_bytes_max = P_PERIOD_BYTE,
 	.periods_min =	  P_PERIOD_MIN,
 	.periods_max =	  P_PERIOD_MAX,
@@ -307,7 +304,8 @@ static int snd_falconi2s_playback_open(struct snd_pcm_substream *substream)
 
 	
 	runtime->hw = snd_falconi2s_playback_hw;
-	/* set the pointer value of substream field in the chip record at open callback to hold the current running substream pointer */
+	/* set the pointer value of substream field in the chip record at 
+	 * open callback to hold the current running substream pointer */
 	chip->play_substream = substream;
 	
 	return 0;
@@ -372,7 +370,8 @@ static int snd_falconi2s_pcm_hw_free(struct snd_pcm_substream *substream)
 static int snd_falconi2s_pcm_prepare(struct snd_pcm_substream *substream)
 {
 
-	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime __attribute__((unused)) = substream->runtime;
+
 	struct sm768chip *chip = snd_pcm_substream_chip(substream);
 	dbg_msg("snd_falconi2s_pcm_prepare\n");
 
@@ -384,11 +383,11 @@ static int snd_falconi2s_pcm_prepare(struct snd_pcm_substream *substream)
 	
 
 	dbg_msg("runtime->rate:%d\n",runtime->rate);
-	dbg_msg("runtime->buffer_size:%d\n",runtime->buffer_size);
+	dbg_msg("runtime->buffer_size:%ld\n",runtime->buffer_size);
 	dbg_msg("runtime->periods:%d\n",runtime->periods);
-	dbg_msg("runtime->period_size:%d\n",runtime->period_size);
+	dbg_msg("runtime->period_size:%ld\n",runtime->period_size);
 	dbg_msg("runtime->frame_bits:%d\n",runtime->frame_bits);
-	dbg_msg("runtime->dma_bytes:%d\n",runtime->dma_bytes);
+	dbg_msg("runtime->dma_bytes:%ld\n",runtime->dma_bytes);
 
 	return 0;
 }
@@ -399,7 +398,7 @@ static int snd_falconi2s_pcm_playback_trigger(struct snd_pcm_substream *substrea
 {
 	struct sm768chip *chip = snd_pcm_substream_chip(substream);
 	dbg_msg("snd_falconi2s_pcm_trigger\n");
-	dbg_msg("substream:0x%x\n",substream);
+	dbg_msg("substream:%p\n",substream);
 
 	
 	switch (cmd) {
@@ -424,7 +423,7 @@ static int snd_falconi2s_pcm_playback_trigger(struct snd_pcm_substream *substrea
  {
   	struct sm768chip *chip = snd_pcm_substream_chip(substream);
 	dbg_msg("snd_falconi2s_pcm_trigger\n");
-	dbg_msg("substream:0x%x\n",substream);
+	dbg_msg("substream:%p\n",substream);
 
 	
 
@@ -604,18 +603,24 @@ static irqreturn_t snd_smi_interrupt(int irq, void *dev_id)
    */
 static int snd_falconi2s_create(struct snd_card *card,
                                          struct drm_device *dev,
-                                         struct sm768chip **rchip)
+                                         struct sm768chip **smichip)
 {
 	int err;
 	int sample_rate = 44100;
-	struct pci_dev *pci = dev->pdev;
+	struct pci_dev *pdev;
 	struct smi_device *smi_device = dev->dev_private;
 	struct sm768chip *chip;
 	static struct snd_device_ops ops = {
 		.dev_free = snd_falconi2s_dev_free,
 	};
 
-	*rchip = NULL;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
+
+	*smichip = NULL;
 
 	/* allocate a chip-specific data with zero filled */
 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
@@ -653,7 +658,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 
 
 	if(!chip->pvMem){
-		err_msg("Map video memory failed\n");
+		dev_err(&pdev->dev, "Map memory failed\n");
 		snd_falconi2s_free(chip);
 		err = -EFAULT;
 		return err;
@@ -662,7 +667,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 	}
 	//above 
 
-	chip->irq = pci->irq;
+	chip->irq = pdev->irq;
 
 	dbg_msg("Audio pci irq :%d\n",chip->irq);
 	
@@ -672,7 +677,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 		sample_rate = 44100;
 
 	if(SM768_AudioInit(SAMPLE_BITS, sample_rate)) {
-		err_msg("Audio init failed!\n");	
+		dev_err(&pdev->dev, "Audio init failed!\n");
 		snd_falconi2s_free(chip);
 		return -1;
 	}
@@ -688,19 +693,19 @@ static int snd_falconi2s_create(struct snd_card *card,
 
 	//Setup ISR. The ISR will move more data from DDR to SRAM.
 	
-	if (request_irq(pci->irq, snd_smi_interrupt, IRQF_SHARED,
+	if (request_irq(pdev->irq, snd_smi_interrupt, IRQF_SHARED,
 		KBUILD_MODNAME, chip_irq_id)) {
-		err_msg("unable to grab IRQ %d\n", pci->irq);
+		dev_err(&pdev->dev, "unable to grab IRQ %d\n", pdev->irq);
 		snd_falconi2s_free(chip);
 		return -EBUSY;
 	}
 	sb_IRQUnmask(SB_IRQ_VAL_I2S); 
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,18,0)
-	snd_card_set_dev(card, &pci->dev);
+	snd_card_set_dev(card, &pdev->dev);
 #endif
 
-	*rchip = chip;
+	*smichip = chip;
 	return 0;
 }
 
@@ -709,23 +714,25 @@ static int snd_falconi2s_create(struct snd_card *card,
 int smi_audio_init(struct drm_device *dev)
 {
 	int idx, err;
-	struct pci_dev *pci = dev->pdev;
+	struct pci_dev *pdev;
 	struct smi_device *sdev = dev->dev_private;
 	struct snd_pcm *pcm;
 	struct snd_card *card;
 	struct sm768chip *chip;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
 
 	if(audio_en == 1)
 		use_wm8978 = 0;
 	else if(audio_en == 2)
 		use_wm8978 = 1;
 	
-#if ((LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)&& !defined(RHEL_RELEASE_VERSION) )) \
-	|| (defined(RHEL_RELEASE_VERSION) && RHEL_VERSION_LOWER_THAN(7,4))
-	err = snd_card_new(&pci->dev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1, THIS_MODULE, 0, &card); 
-#else
-	err = snd_card_create(-1, 0, THIS_MODULE, 0, &card);	  
-#endif
+	err = snd_card_new(&pdev->dev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1, THIS_MODULE, 0, &card); 
+
 
 	
 	if (err < 0)
@@ -737,8 +744,8 @@ int smi_audio_init(struct drm_device *dev)
       		return err;
 	}
 
-	strcpy(card->driver, "SiliconMotion Audio");
-	strcpy(card->shortname, "SMI Audio");
+	strcpy(card->driver, "smi-audio");
+	strcpy(card->shortname, "smi-audio");
 	strcpy(card->longname, "SiliconMotion Audio");
 
 	snd_pcm_new(card,"smiaudio_pcm",0,1,1,&pcm);
@@ -752,7 +759,11 @@ int smi_audio_init(struct drm_device *dev)
                           &snd_falconi2s_capture_ops);
 	  
 	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
-                                                snd_dma_pci_data(pci),
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+					      &pdev->dev,
+#else
+					      snd_dma_pci_data(pdev),
+#endif
 						P_PERIOD_BYTE*P_PERIOD_MIN, P_PERIOD_BYTE*P_PERIOD_MAX);
 
 	strcpy(card->mixername, "SiliconMotion Audio Mixer Control");
@@ -779,15 +790,20 @@ int smi_audio_init(struct drm_device *dev)
 
 void smi_audio_remove(struct drm_device *dev)
 {
-	struct pci_dev *pci = dev->pdev;
+	struct pci_dev *pdev;
 	struct smi_device *sdev = dev->dev_private;
 	struct snd_card *card = sdev->card;
 
-	inf_msg("smi_pci_remove\n");
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
+
 	
-	dbg_msg("perpare to free irq, pci irq :%d, chip_irq_id=%p\n", pci->irq, chip_irq_id);
-	if(pci->irq){				
-		free_irq(pci->irq, chip_irq_id);
+	dbg_msg("perpare to free irq, pci irq:%u, chip_irq_id=0x%p\n", pdev->irq, chip_irq_id);
+	if(pdev->irq){				
+		free_irq(pdev->irq, chip_irq_id);
 		dbg_msg("free irq\n");
 	}
 	SM768_AudioStop();

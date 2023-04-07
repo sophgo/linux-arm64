@@ -49,6 +49,7 @@ static int sysfs_create(struct device *dev);
 #define SECURE_REGION_MAX	8
 
 #define FT_BIN_TYPE_ADDR_83 83
+#define FT_BIN_TYPE_ADDR_84 84
 
 #define FT_TEST_RESULT_PASS 0
 #define FT_TEST_RESULT_FAIL 1
@@ -329,15 +330,17 @@ EXPORT_SYMBOL_GPL(efuse_get_date);
 
 /*	cap
  *	0: subsys 0,1 both can use
- *	1: subsys 0 can not be use£¬subsys 1 can use
- *	2: subsys 0 can be use£¬subsys 1 can not use
- *	3: subsys 0£¬1 both can not be use
+ *	1: subsys 0 can not be use, subsys 1 can use
+ *	2: subsys 0 can be use, subsys 1 can not use
+ *	3: subsys 0,1 both can not be use
  */
 void efuse_ft_get_video_cap(int *cap)
 {
 	u32 value;
 
 	value = efuse_read(FT_BIN_TYPE_ADDR_83);
+	if (0xff == (value & 0xff))
+		value = efuse_read(FT_BIN_TYPE_ADDR_84);
 
 	if ((((value>>EFUSE_FT_VIDEO_0_BIT)&0x1) == FT_TEST_RESULT_FAIL) ||
 		(((value>>EFUSE_FT_VIDEO_0_BIT_BAK)&0x1) == FT_TEST_RESULT_FAIL))
@@ -363,6 +366,8 @@ void efuse_ft_get_bin_type(int *cap)
 	u32 value;
 
 	value = efuse_read(FT_BIN_TYPE_ADDR_83);
+	if (0xff == (value & 0xff))
+		value = efuse_read(FT_BIN_TYPE_ADDR_84);
 
 	if ((((value>>EFUSE_FT_HARD_BIN_0_BIT)&0x1) == FT_TEST_RESULT_FAIL) ||
 		(((value>>EFUSE_FT_HARD_BIN_0_BIT_BAK)&0x1) == FT_TEST_RESULT_FAIL))

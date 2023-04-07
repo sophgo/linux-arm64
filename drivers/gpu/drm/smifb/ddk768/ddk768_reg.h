@@ -1942,11 +1942,11 @@
 
 /* Palette RAM */
 /* Panel Pallete register starts at 0x080400 ~ 0x0807FC */
-#define CHANNEL0_PALETTE_RAM                             0x080C00
-#define PALETTE_RAM                             0x080C00
+#define CHANNEL0_PALETTE_RAM                            0x080C00
+#define PALETTE_RAM                             	    0x080C00
 
 /* Panel Pallete register starts at 0x080C00 ~ 0x080FFC */
-#define CHANNEL1_PALETTE_RAM                           0x088C00
+#define CHANNEL1_PALETTE_RAM                            0x088C00
 
 //#include "regdma.h"
 

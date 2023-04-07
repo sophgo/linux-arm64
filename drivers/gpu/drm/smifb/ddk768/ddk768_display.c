@@ -20,6 +20,7 @@
 #include "ddk768_help.h"
 
 
+
 /* Monitor Detection RGB Default Threshold values */
 #define DEFAULT_MON_DETECTION_THRESHOLD         0x64
 
@@ -32,19 +33,18 @@
  */
 long initDisplay()
 {
-    //Empty function for now. Just a place holder for future use.
-#if 0
+
     /* set 80024[30:28] and 88024[30:28] to 0x3 in order for the DAC to output stronger signal. */
     unsigned long value;
-    value = peekRegisterDWord(MONITOR_DETECT);
+    value = peekRegisterDWord(CRT_DETECT);
     value &= 0xCFFFFFFF;
     value |= 0x30000000;
-    pokeRegisterDWord(MONITOR_DETECT, value);
-    value = peekRegisterDWord(MONITOR_DETECT + CHANNEL_OFFSET);
+    pokeRegisterDWord(CRT_DETECT, value);
+    value = peekRegisterDWord(CRT_DETECT + CHANNEL_OFFSET);
     value &= 0xCFFFFFFF;
     value |= 0x30000000;
-    pokeRegisterDWord(MONITOR_DETECT + CHANNEL_OFFSET, value);
-#endif
+    pokeRegisterDWord(CRT_DETECT + CHANNEL_OFFSET, value);
+
     return 0;
 
 }
@@ -370,9 +370,10 @@ void ddk768_setDisplayEnable(
          ulDispCtrlReg = FIELD_SET(ulDispCtrlReg, DISPLAY_CTRL, DIRECTION, INPUT); 
          pokeRegisterDWord(ulDispCtrlAddr, ulDispCtrlReg);
 
-         ulDispCtrlReg = FIELD_SET(ulDispCtrlReg, DISPLAY_CTRL, PLANE, ENABLE)|        
+		 ulDispCtrlReg = FIELD_SET(ulDispCtrlReg, DISPLAY_CTRL, PLANE, ENABLE)|        
                             FIELD_SET(0, DISPLAY_CTRL, DATA_PATH, EXTENDED); 
-         pokeRegisterDWord(ulDispCtrlAddr, ulDispCtrlReg);
+		
+		 pokeRegisterDWord(ulDispCtrlAddr, ulDispCtrlReg);
     }
     else
     {

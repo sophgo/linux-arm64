@@ -15,10 +15,11 @@
 #include "ddk768/ep952api.h"
 #endif
 
-void hw768_load_lut(int path, int offset, u32 rgb);
-void hw768_enable_gamma(unsigned dispCtrl,unsigned long enableGammaCtrl);
 
-
+unsigned char HDMI_connector_detect(void);
+void ddk768_setDisplayPlaneDisableOnly(
+   disp_control_t dispControl /* Channel 0 or Channel 1) */
+);
 
 
 void hw768_enable_lvds(int channels);
@@ -129,6 +130,7 @@ long ddk768_setMode(
     logicalMode_t *pLogicalMode
 );
 long setSingleViewOn(disp_control_t dispOutput);
+long initDisplay(void);	
 
 void setDisplayDPMS(
    disp_control_t dispControl, /* Channel 0 or Channel 1) */
@@ -151,7 +153,11 @@ void hw768_clear_vsync_interrupt(int path);
 long hw768_setMode(logicalMode_t *pLogicalMode, struct drm_display_mode mode);
 
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw768_en_dis_interrupt(int status, int pipe);
+#else
+int hw768_en_dis_interrupt(int status);
+#endif
 
 int hdmi_detect(void);
 
@@ -166,5 +172,13 @@ void ddk768_disable_IntMask(void);
 
 void hw768_suspend(struct smi_768_register * pSave);
 void hw768_resume(struct smi_768_register * pSave);
+
+void hw768_setgamma(disp_control_t dispCtrl, unsigned long enable,unsigned long lvds_ch);
+void hw768_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u8 lut_b[]);
+
+long hw768_AdaptI2CCleanBus(
+    struct drm_connector *connector
+);
+long hw768_AdaptI2CInit(struct smi_connector *smi_connector);
 
 #endif

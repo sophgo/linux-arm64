@@ -13,17 +13,17 @@
 		ranges;
 
 		armfw_reserved: armfw_mem {
-			reg = <0x1 0x0 0x0 0x1000000>; // 16M
+			reg = <0x1 0x0 0x0 0x20000000>; // 512M
 			no-map;
 		};
 
 		arm_reserved: arm_mem {
-			reg = <0x1 0x01000000 0x0 0x4000000>; // 64M
+			reg = <0x1 0x20000000 0x0 0x4000000>; // 64M
 			no-map;
 		};
 
 		smmu_reserved: smmu_mem {
-			reg = <0x1 0x05000000 0x0 0x100000>; // 1M
+			reg = <0x1 0x24000000 0x0 0x100000>; // 1M
 			no-map;
 		};
 
@@ -40,7 +40,7 @@
 		 */
 		ion_for_npu: ion_npu_mem {
 			compatible = "npu-region";
-			reg = <0x1 0x05100000 0x0 0xF6E00000>; // 3.86GB
+			reg = <0x1 0x24100000 0x0 0xF6E00000>; // 3.86GB
 		};
 
 		bl31_reserved: bl31_mem {

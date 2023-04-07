@@ -271,9 +271,6 @@ int bm168x_msi_host_init(struct pcie_port *pp)
 
 static struct dw_pcie_host_ops bm168x_pcie_host_ops = {
 	.host_init = bm168x_pcie_host_init,
-#ifdef NETWORK_TOP_IRQ
-	.msi_host_init = bm168x_msi_host_init,
-#endif
 };
 
 static int bm168x_pcie_add_pcie_port(struct bm168x_pcie *bm168x_pcie,
@@ -284,29 +281,32 @@ static int bm168x_pcie_add_pcie_port(struct bm168x_pcie *bm168x_pcie,
 	struct device *dev = pci->dev;
 	int ret;
 
-#ifndef NETWORK_TOP_IRQ
-	if (IS_ENABLED(CONFIG_PCI_MSI)) {
-		pp->msi_irq = platform_get_irq_byname(pdev, "msi");
-		if (pp->msi_irq <= 0) {
-			dev_err(dev, "failed to get MSI irq\n");
-			return -ENODEV;
+	if (device_property_read_bool(&pdev->dev, "pcie_irq_enable")) {
+		if (IS_ENABLED(CONFIG_PCI_MSI)) {
+			pp->msi_irq = platform_get_irq_byname(pdev, "msi");
+			if (pp->msi_irq <= 0) {
+				dev_err(dev, "failed to get MSI irq\n");
+				return -ENODEV;
+			}
+			/*
+			 * now we have irq_set_chained_handler_and_data in dw_pcie_host_init,
+			 * no need to request irq here.
+			 */
+			#if 0
+			ret = devm_request_irq(dev, pp->msi_irq,
+					bm168x_pcie_irq_handler,
+					IRQF_SHARED | IRQF_NO_THREAD,
+					"bm168x-pcie-irq", bm168x_pcie);
+			if (ret) {
+				dev_err(dev, "failed to request MSI irq\n");
+				return ret;
+			}
+			#endif
 		}
-		/*
-		 * now we have irq_set_chained_handler_and_data in dw_pcie_host_init,
-		 * no need to request irq here.
-		 */
-		#if 0
-		ret = devm_request_irq(dev, pp->msi_irq,
-				bm168x_pcie_irq_handler,
-				IRQF_SHARED | IRQF_NO_THREAD,
-				"bm168x-pcie-irq", bm168x_pcie);
-		if (ret) {
-			dev_err(dev, "failed to request MSI irq\n");
-			return ret;
-		}
-		#endif
+	} else {
+		bm168x_pcie_host_ops.msi_host_init = bm168x_msi_host_init;
 	}
-#endif
+
 
 	pp->root_bus_nr = -1;
 	pp->ops = &bm168x_pcie_host_ops;
