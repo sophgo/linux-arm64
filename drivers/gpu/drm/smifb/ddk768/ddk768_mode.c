@@ -11,6 +11,8 @@
 *******************************************************************/
 
 #include "linux/string.h"
+#include <linux/delay.h>	
+
 
 #include "ddk768_reg.h"
 
@@ -23,6 +25,7 @@
 
 extern int lvds_channel;
 
+extern int clk_phase;
 
 
 /* The valid signature of the user data pointer  for the setmode function. 
@@ -840,6 +843,7 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
     unsigned long paletteRam;
     unsigned long offset, pllReg;
     unsigned long hdmi_channel;
+	unsigned long regvalue;
 #if 0 // print UHD register setting for debug.
     if (pLogicalMode->x == 3840)
         return(printModeRegisters(pLogicalMode, pModeParam, pPLL));
@@ -852,8 +856,21 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
     offset = (pLogicalMode->dispCtrl==CHANNEL0_CTRL)? 0 : CHANNEL_OFFSET;
 	pllReg = (pLogicalMode->dispCtrl==CHANNEL0_CTRL)? VCLK0_PLL : VCLK1_PLL;
 
-    /* Program PLL */
-    pokeRegisterDWord(pllReg, ddk768_formatPllReg(pPLL));
+
+	/* Turn off PLL at first. */
+    regvalue = peekRegisterByte(pllReg);
+    regvalue |= (1 << 0);
+    pokeRegisterDWord(pllReg, regvalue);
+    /* Poke setting. */
+    regvalue = ddk768_formatPllReg(pPLL);
+    regvalue |= (1 << 0);
+    pokeRegisterDWord(pllReg, regvalue);
+    /* Delay 100 us and turn on PLL. */
+    udelay(100);
+    regvalue = ddk768_formatPllReg(pPLL);
+    regvalue &= ~(1 << 0);
+    pokeRegisterDWord(pllReg, regvalue);
+  
     
 #if 0
     /* Frame buffer base */
@@ -910,6 +927,11 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
         : (pLogicalMode->bpp == 16
         ? FIELD_SET(0, DISPLAY_CTRL, FORMAT, 16)
         : FIELD_SET(0, DISPLAY_CTRL, FORMAT, 32)));
+
+	if(clk_phase == 0)
+		ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, CLOCK_PHASE, ACTIVE_LOW);
+	if(clk_phase == 1)
+		ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, CLOCK_PHASE, ACTIVE_HIGH);
 
 	
 	if( hdmi_channel == DISPLAY_CTRL_HDMI_SELECT_CHANNEL0)

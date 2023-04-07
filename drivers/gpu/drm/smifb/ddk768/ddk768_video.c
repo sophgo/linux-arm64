@@ -1071,5 +1071,83 @@ void stopVideo(unsigned dispCtrl)
     videoSetCtrl(dispCtrl, VIDEO_OFF);
 }
 
+/*
+ * Only valid for Overlay layer. Setup video settings and enable it. 
+*/
+
+int SM768_setOverlay(
+    disp_control_t dispControl, /* Channel 0 or Channel 1) */
+    PBLIT_BLK src,  /* Only need: source Width & Height, Pitch */
+    PYUV_BUF_ADDR SrcAddr,   /* Y U V source base address */
+    PBLIT_BLK dest,  /* Needed input value: destination X & Y & Width & Height */
+    file_format srcFormat
+)
+{
+    unsigned long yPitch = 0, uvPitch = 0; 
+    video_format_t VideoFormat = FORMAT_RGB565;
+
+    /* Set Video Conversion Constant */
+    videoSetConstants(
+			 dispControl,            				  
+			 0,                /* Y Adjustment */
+                      0xED,             /* Red Conversion constant */
+                      0xED,             /* Green Conversion constant */
+                      0xED);            /* Blue Conversion constant */
+                      
+    /* Set video initial scale for Buffer 0 and buffer 1 */                      
+    videoSetInitialScale(dispControl, 0, 0);
+
+    /* Set source buffer */
+    //    videoSetSourceBuffer(NORMAL_BUFFER);
+
+    /* Set the YUV Swap byte */
+    videoSwapYUVByte(dispControl,NORMAL);
+
+    /* Set video interpolation */
+    videoSetInterpolation(dispControl, 0, 0);
+
+    /* Not using Gamma Control */
+    videoSetGammaCtrl(dispControl, 0);
+
+    /* Setup the video */
+    /* Based on the selected fileFormat, calculate the video source addresses (if necessary) and pitches. */
+    switch (srcFormat)
+    {
+        case FFT_RGB565:
+            yPitch = PITCH(src->Width, 16);
+            uvPitch = 0;
+            VideoFormat = FORMAT_RGB565;
+            break;
+        case FFT_RGBx888:
+            yPitch = PITCH(src->Width, 32);
+            uvPitch = 0;
+            VideoFormat = FORMAT_RGB888;
+            break;
+    }
+    videoSetupEx(
+               dispControl,
+    		   dest->x,    /* X Coordinate of the video window */
+               dest->y,   /* Y Coordinate of the video window */ 
+               src->Width,            /* The source video width */ 
+               src->Height,           /* The source video height */ 
+               dest->Width,            /* The destination video width */ 
+               dest->Height,           /* The destination video height */
+               0,                       /* Double buffer enable flag */
+               SrcAddr->bufYAddr,            /* The source of the video buffer 0 to display */
+               SrcAddr->bufCbAddr,            /* U Source Base Address (not used in RGB Space) */
+               SrcAddr->bufCrAddr,            /* V Source Base Address (not used in RGB Space) */
+               uvPitch,             /* UV plane pitch value in bytes (not used in */
+               yPitch, /* The source address buffer pitch in bytes */ 
+               yPitch, /* The source address buffer offset in bytes.  
+                                       Set it the same as srcPitch in normal
+                                       usage. */
+               VideoFormat,            /* Source video format */
+               0,       /* Edge Detection enable flag */
+               0);   /* Edge Detection value. SM718 only use bit 9 to 0 */
+    
+    /* Start Video */
+    startVideo(dispControl);
+    return 0;
+}
 
 

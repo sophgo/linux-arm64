@@ -910,7 +910,7 @@ static int vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *batch)
 	int core_id = -1;
 
 	if (down_interruptible(&vpp_core_sem)) {
-		pr_err("vpp down_interruptible was interrupted\n");
+		// pr_err("vpp down_interruptible was interrupted\n");
 		return VPP_ERESTARTSYS;
 	}
 
@@ -963,8 +963,8 @@ up_sem:
 
 	if (signal_pending(current)) {
 		ret |= VPP_ERESTARTSYS;
-		pr_err("vpp signal pending, ret=%d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
-		       ret, current->pid, current->tgid, vpp_idle_bit_map);
+		// pr_err("vpp signal pending, ret=%d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
+		//        ret, current->pid, current->tgid, vpp_idle_bit_map);
 	}
 
 	return ret;

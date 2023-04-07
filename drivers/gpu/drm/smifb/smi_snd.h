@@ -10,24 +10,17 @@
 #ifndef __SMI_SOUND_H__
 #define __SMI_SOUND_H__
 
-#include <linux/ioport.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
+#include <linux/ioport.h>
 #include <sound/control.h>
-#include <sound/pcm.h>
 #include <sound/core.h>
 #include <sound/initval.h>
-
-
-//#define SAVE_AUDIO_DATA
-
+#include <sound/pcm.h>
 
 /* definition of the chip-specific record */
 struct sm768chip {
 	struct snd_card *card;
-	struct pci_dev *pci;
-
-	unsigned long port;
 	int irq;
 
 	struct snd_pcm_substream *play_substream;

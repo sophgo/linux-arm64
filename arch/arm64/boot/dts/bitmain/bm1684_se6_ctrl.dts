@@ -91,3 +91,7 @@
 		};
 	};
 };
+
+&pcie0 {
+	pcie_irq_enable;
+};
