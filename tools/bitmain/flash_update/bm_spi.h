@@ -97,6 +97,8 @@
 #define SPI_ID_M25P128          0x00182020
 #define SPI_ID_N25Q128          0x0018ba20
 #define SPI_ID_GD25LQ128        0x001860c8
+#define SPI_ID_GD25LB512ME      0x001a67c8
+#define SPI_ID_XM25QU128C       0x00184120
 
 size_t spi_flash_read_blocks(int lba, uintptr_t buf, size_t size);
 size_t spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size);

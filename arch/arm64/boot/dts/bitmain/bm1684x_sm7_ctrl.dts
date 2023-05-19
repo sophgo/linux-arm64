@@ -1,0 +1,96 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684x_evb.dtsi"
+
+/ {
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+	/delete-node/ bitmain-ion; // delete ion
+	/delete-node/ bmtpu; // delete tpu
+	/delete-node/ vpp@50070000; // delete vpp
+	/delete-node/ jpu@50030000; // delete jpu
+	/delete-node/ vpu@50050000; // delete vpu
+	info {
+		file-name = "bm1684x_sm7_ctrl.dts";
+	};
+};
+
+/delete-node/ &ion_for_npu; // delete npu
+/delete-node/ &ion_for_vpp; // delete vpp
+/delete-node/ &ion_for_vpu; // delete vpu
+/delete-node/ &vpu_reserved; // delete vpu_reserved
+
+&i2c1 {
+	bm16xxeeprom@6f {
+	    compatible = "bitmain,bm16xx-eeprom";
+	    reg = <0x6f>;
+	    size = <256>;
+
+	    #address-cells = <1>;
+	    #size-cells = <1>;
+
+	    se6_sn: sn@0000 {
+		    reg = <0x0000 17>;
+	    };
+
+	    se6ctrl_sn: sn@0020 {
+		    reg = <0x0020 17>;
+	    };
+	};
+};
+
+&pwm{
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_acquire>;
+};
+
+&pwmfan {
+	status = "disabled";
+};
+
+&i2c1 {
+	/delete-node/ tmp451@6b;
+
+	tmp451: tmp451@4c {
+		compatible = "ti,tmp451";
+		reg = <0x4c>;
+		#thermal-sensor-cells = <1>;
+	};
+};
+
+&thermal_zones {
+	soc {
+		trips {
+			/delete-node/ soc_pwmfan_trip@0;
+			/delete-node/ soc_pwmfan_trip@1;
+			/delete-node/ soc_pwmfan_trip@2;
+			/delete-node/ soc_pwmfan_trip@3;
+			/delete-node/ soc_pwmfan_trip@4;
+		};
+
+		cooling-maps {
+			/delete-node/ map3;
+			/delete-node/ map4;
+			/delete-node/ map5;
+			/delete-node/ map6;
+			/delete-node/ map7;
+		};
+	};
+};
+
+#if 0
+// workaround for forcing speed to 100M
+&ethernet0 {
+	max-speed = <100>;
+	eth-sophgo-config {
+		autoneg = "disable";
+	};
+};
+
+&ethernet1 {
+	max-speed = <100>;
+	eth-sophgo-config {
+		autoneg = "disable";
+	};
+};
+#endif
