@@ -14,4 +14,7 @@ dtb-$(CONFIG_ARCH_BM1684) += bm1684_evb_v1.2.dtb \
 				bm1684_sm5m_v0.1_rb.dtb bm1684_sm5m_v0.1_rb_mm0.dtb\
 				bm1684_sm5m_v0.2_rb.dtb bm1684_sm5m_v3.0_rb.dtb \
 				bm1684_sc5_ep.dtb bm1684_sc5_mix.dtb \
-				bm1684x_fpga.dtb bm1684x_pld.dtb bm1684x_evb_v0.0.dtb bm1684x_ep.dtb bm1684x_mix.dtb
+				bm1684x_fpga.dtb bm1684x_pld.dtb bm1684x_evb_v0.0.dtb \
+				bm1684x_sm7m_v0.0.dtb bm1684x_ep.dtb bm1684x_mix.dtb \
+				bm1684x_sm7_ctrl.dtb \
+				bm1684x_sm7m_v0.0_cust_v1.dtb

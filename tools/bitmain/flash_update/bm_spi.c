@@ -657,7 +657,8 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 	id = bm_spi_read_id(mem_rw_ops.ctrl_base);
 	if (id == SPI_ID_M25P128) {
 		sector_size = 256 * 1024;
-	} else if (id == SPI_ID_N25Q128 || id == SPI_ID_GD25LQ128) {
+	} else if (id == SPI_ID_N25Q128 || id == SPI_ID_GD25LQ128 ||
+			id == SPI_ID_GD25LB512ME || id == SPI_ID_XM25QU128C) {
 		sector_size = 64 * 1024;
 	} else {
 		ERROR("unrecognized flash ID 0x%x\n", id);
@@ -720,7 +721,11 @@ int bm_spi_flash_write_status(uint16_t value)
 	uint32_t id, spi_status, wait = 0;
 
 	id = bm_spi_read_id(mem_rw_ops.ctrl_base);
-	if ((id != SPI_ID_GD25LQ128) && (id != SPI_ID_M25P128)) {
+	if ((id != SPI_ID_GD25LQ128) &&
+			(id != SPI_ID_M25P128) &&
+			(id != SPI_ID_N25Q128) &&
+			(id != SPI_ID_GD25LB512ME) &&
+			(id != SPI_ID_XM25QU128C)) {
 		ERROR("unrecognized flash ID 0x%x\n", id);
 		return -EINVAL;
 	}

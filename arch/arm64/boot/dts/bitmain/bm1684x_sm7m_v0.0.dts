@@ -1,0 +1,44 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684x_evb.dtsi"
+
+/ {
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+	info {
+		file-name = "bm1684x_sm7m_v0.0.dts";
+	};
+};
+
+&vpu_reserved {
+	reg = <0x3 0x40000000 0x0 0x08000000>; // 128M, for VPU firmware
+	no-map;
+};
+
+&ion_for_vpu {
+			compatible = "vpu-region";
+			reg = <0x3 0x48000000 0x0 0xb8000000>; // 3G
+};
+
+&ion_for_npu {
+			compatible = "npu-region";
+			reg = <0x1 0x24100000 0x0 0x96e00000>; // 2.5g
+};
+
+
+#if 0
+// workaround for forcing speed to 100M
+&ethernet0 {
+	max-speed = <100>;
+	eth-sophgo-config {
+		autoneg = "disable";
+	};
+};
+
+&ethernet1 {
+	max-speed = <100>;
+	eth-sophgo-config {
+		autoneg = "disable";
+	};
+};
+#endif

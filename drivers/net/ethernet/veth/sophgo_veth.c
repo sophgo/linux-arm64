@@ -18,8 +18,7 @@ static inline void intr_clear(struct veth_dev *vdev)
 {
 	u32 value;
 
-	value = sg_read32(vdev->top_misc_reg, TOP_MISC_GP_REG15_STS_OFFSET);
-	value |= (1 << 15);
+	value = (1 << 15);
 	sg_write32(vdev->top_misc_reg, TOP_MISC_GP_REG15_CLR_OFFSET, value);
 }
 
@@ -45,9 +44,6 @@ static void sg_enable_eth_irq(struct veth_dev *vdev)
 	intc_enable = sg_read32(vdev->intc_cfg_reg, 4);
 	intc_enable |= (1 << 18);
 	sg_write32(vdev->intc_cfg_reg, 0x4, intc_enable);
-	intc_mask = sg_read32(vdev->intc_cfg_reg, 0xc);
-	intc_mask &= ~(1 << 18);
-	sg_write32(vdev->intc_cfg_reg, 0xc, intc_mask);
 }
 
 static int notify_host(struct veth_dev *vdev)
@@ -214,10 +210,13 @@ static void net_state_work(struct work_struct *worker)
 	ndev = vdev->ndev;
 	dev = &vdev->pdev->dev;
 
+	while (sg_read32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET))
+		msleep(20);
+
 	sg_write32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET, DEVICE_READY_FLAG);
 
 	while (sg_read32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET) != HOST_READY_FLAG)
-		mdelay(10);
+		msleep(20);
 	/* i am ready again */
 	sg_write32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET, DEVICE_READY_FLAG);
 	vdev->pt = pt_init(dev, vdev->shm_cfg_reg, vdev);
@@ -235,11 +234,6 @@ static void net_state_work(struct work_struct *worker)
 
 static int set_ready_flag(struct veth_dev *vdev)
 {
-	if (sg_read32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET)) {
-		pr_err("handshake register not clear!\n");
-		return -EINVAL;
-	}
-
 	INIT_WORK(&vdev->net_state_worker, net_state_work);
 	schedule_work(&vdev->net_state_worker);
 
