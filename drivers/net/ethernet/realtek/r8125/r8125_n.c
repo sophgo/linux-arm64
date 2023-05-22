@@ -10840,6 +10840,11 @@ rtl8125_init_software_variable(struct net_device *dev)
 
         tp->NicCustLedValue = RTL_R16(tp, CustomLED);
 
+	RTL_W16(tp, LEDSEL1, 0x220);
+	RTL_W16(tp, LEDSEL2, 0x2B);
+	RTL_W16(tp, LEDSEL3, 0x20A);
+	RTL_W16(tp, LEDFEARUTE, 0xE0);
+
         tp->wol_opts = rtl8125_get_hw_wol(tp);
         tp->wol_enabled = (tp->wol_opts) ? WOL_ENABLED : WOL_DISABLED;
 
