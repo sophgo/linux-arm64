@@ -48,16 +48,6 @@
 	status = "disabled";
 };
 
-&i2c1 {
-	/delete-node/ tmp451@6b;
-
-	tmp451: tmp451@4c {
-		compatible = "ti,tmp451";
-		reg = <0x4c>;
-		#thermal-sensor-cells = <1>;
-	};
-};
-
 &thermal_zones {
 	soc {
 		trips {
@@ -77,20 +67,3 @@
 		};
 	};
 };
-
-#if 0
-// workaround for forcing speed to 100M
-&ethernet0 {
-	max-speed = <100>;
-	eth-sophgo-config {
-		autoneg = "disable";
-	};
-};
-
-&ethernet1 {
-	max-speed = <100>;
-	eth-sophgo-config {
-		autoneg = "disable";
-	};
-};
-#endif

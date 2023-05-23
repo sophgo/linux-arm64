@@ -24,21 +24,3 @@
 			compatible = "npu-region";
 			reg = <0x1 0x24100000 0x0 0x96e00000>; // 2.5g
 };
-
-
-#if 0
-// workaround for forcing speed to 100M
-&ethernet0 {
-	max-speed = <100>;
-	eth-sophgo-config {
-		autoneg = "disable";
-	};
-};
-
-&ethernet1 {
-	max-speed = <100>;
-	eth-sophgo-config {
-		autoneg = "disable";
-	};
-};
-#endif
