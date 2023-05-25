@@ -1,0 +1,27 @@
+#include "bm1684x_sm7m_v0.0.dts"
+
+/ {
+	info {
+		file-name = "bm1684x_sm7m_v0.0_mm0.dts";
+	};
+};
+
+&vpu_reserved {
+	reg = <0x3 0x78000000 0x0 0x08000000>; // 128M, for VPU firmware
+	no-map;
+};
+
+&ion_for_vpu {
+	compatible = "vpu-region";
+	reg = <0x3 0x80000000 0x0 0x80000000>; // 2G, for VPU
+};
+
+&ion_for_npu {
+	compatible = "npu-region";
+	reg = <0x1 0x24100000 0x1 0xDBF00000>; // 7.44g, for NPU
+};
+
+&ion_for_vpp {
+	compatible = "vpp-region";
+	reg = <0x4 0x40000000 0x0 0xA0000000>; // 2.5g, for VPP/JPU
+};

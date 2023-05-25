@@ -20,8 +20,10 @@
 #include <linux/module.h>
 #include <linux/sched/signal.h>
 #include <soc/bitmain/bm1684_top.h>
+#include <linux/kthread.h>
 
 #include "vpp1684.h"
+#include "vpp_platform.h"
 
 #define BM_CDEV_VPP_NAME	"bm-vpp"
 #define BM_CDEV_VPP_CLASS	"bm-vpp-class"
@@ -58,6 +60,10 @@ static void *vmmubase_sys[VPP_CORE_MAX];
 static DECLARE_WAIT_QUEUE_HEAD(wq_vpp0);
 static DECLARE_WAIT_QUEUE_HEAD(wq_vpp1);
 static int got_event_vpp[VPP_CORE_MAX];
+
+static struct vpp_statistic_info s_vpp_usage_info = {0};
+static struct task_struct *s_vpp_monitor_task;
+static struct proc_dir_entry *entry;
 
 #if 0
 /*Positive number * 1024*/
@@ -935,10 +941,13 @@ static int vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *batch)
 		goto gate_vpp;
 	}
 
+	atomic_inc(&s_vpp_usage_info.vpp_busy_status[core_id]);
 	if (core_id == 0)
 		ret1 = wait_event_timeout(wq_vpp0, got_event_vpp[core_id], HZ);
 	else
 		ret1 = wait_event_timeout(wq_vpp1, got_event_vpp[core_id], HZ);
+	atomic_dec(&s_vpp_usage_info.vpp_busy_status[core_id]);
+
 	if (ret1 == 0) {
 		pr_err("vpp wait_event_timeout! ret %d, core_id %d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
 			ret1, core_id, current->pid, current->tgid, vpp_idle_bit_map);
@@ -1104,6 +1113,48 @@ static u64 vpp_dma_mask = DMA_BIT_MASK(40);
 
 static const long des_unit = ALIGN(sizeof(struct vpp_descriptor), 32);
 static DEFINE_MUTEX(vpp_used_map_mutex);
+
+static ssize_t info_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+{
+	char dat[512] = { 0 };
+	int len = 0, i = 0;
+	int err = 0;
+
+	len = strlen(dat);
+	sprintf(dat + len, "\"core\" : [\n");
+	for (i = 0; i < VPP_CORE_MAX - 1; i++) {
+		len = strlen(dat);
+		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}]\n",
+			i, s_vpp_usage_info.vpp_core_usage[i], s_vpp_usage_info.vpp_working_time_in_ms[i]*100/
+			s_vpp_usage_info.vpp_total_time_in_ms[i]);
+	}
+	len = strlen(dat);
+		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}]\n",
+			i, s_vpp_usage_info.vpp_core_usage[i], s_vpp_usage_info.vpp_working_time_in_ms[i]*100/
+			s_vpp_usage_info.vpp_total_time_in_ms[i]);
+
+	len = strlen(dat);
+	sprintf(dat + len, "\n");
+	len = strlen(dat) + 1;
+	if (size < len) {
+		pr_err("read buf too small\n");
+		return -EIO;
+	}
+	if (*ppos >= len)
+		return 0;
+
+	err = copy_to_user(buf, dat, len);
+	if (err)
+		return 0;
+
+	*ppos = len;
+
+	return len;
+}
+
+static const struct file_operations proc_info_operations = {
+	.read   = info_read,
+};
 
 static int bm_vpp_probe(struct platform_device *pdev)
 {
@@ -1386,7 +1437,14 @@ static int bm_vpp_probe(struct platform_device *pdev)
 		npu_reserved[0], npu_reserved[1]);
 	pr_info("vpu_reserved: base 0x%llx, size 0x%llx\n",
 		vpu_reserved[0], vpu_reserved[1]);
-
+	if (s_vpp_monitor_task == NULL) {
+		s_vpp_monitor_task = kthread_run(vpp_monitor_thread, &s_vpp_usage_info, "vpp_monitor");
+		if (s_vpp_monitor_task == NULL)
+			pr_info("create vpp monitor thread failed\n");
+		else
+			pr_info("create vpp monitor thread done\n");
+	}
+	entry = proc_create("vppinfo", 0, NULL, &proc_info_operations);
 	return 0;
 }
 
@@ -1396,7 +1454,10 @@ static int bm_vpp_remove(struct platform_device *pdev)
 	const long des_size = ALIGN(VPP_CORE_MAX * des_core, PAGE_SIZE);
 
 	dma_free_coherent(&pdev->dev, des_size, pdes[0][0], des_paddr[0][0]);
-
+	if (entry) {
+		proc_remove(entry);
+		entry = NULL;
+	}
 	return 0;
 }
 
