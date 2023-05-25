@@ -21,6 +21,8 @@
 /delete-node/ &vpu_reserved; // delete vpu_reserved
 
 &i2c1 {
+	/delete-node/ rtc@68;
+
 	bm16xxeeprom@6f {
 	    compatible = "bitmain,bm16xx-eeprom";
 	    reg = <0x6f>;
@@ -36,6 +38,16 @@
 	    se6ctrl_sn: sn@0020 {
 		    reg = <0x0020 17>;
 	    };
+	};
+};
+
+&i2c2 {
+	pinctrl-names = "default", "dbgi2c";
+	pinctrl-0 = <&i2c2_acquire &dbgi2c_release>;
+
+	rtc@68 {
+		compatible = "dallas,ds1307";
+		reg = <0x68>;
 	};
 };
 
