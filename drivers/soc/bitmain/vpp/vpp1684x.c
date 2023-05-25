@@ -19,8 +19,10 @@
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/sched/signal.h>
+#include <linux/kthread.h>
 
 #include "vpp1684x.h"
+#include "vpp_platform.h"
 
 #define VPP_OK                             (0)
 #define VPP_ERR                            (-1)
@@ -50,6 +52,10 @@ static void *vppbase_sys[VPP1686_CORE_MAX];
 static DECLARE_WAIT_QUEUE_HEAD(wq_vpp0);
 static DECLARE_WAIT_QUEUE_HEAD(wq_vpp1);
 static int got_event_vpp[VPP1686_CORE_MAX];
+
+static struct vpp_statistic_info s_vpp_usage_info = {0};
+static struct task_struct *s_vpp_monitor_task;
+static struct proc_dir_entry *entry;
 
 #if 0
 /*Positive number * 1024*/
@@ -175,9 +181,9 @@ static int vpp_handle_reset(struct bm_vpp_dev *vdev)
 }
 static int vpp_soft_rst(int core_id)
 {
-	u32 reg_read = 0;
-	u32 active_check = 0;
-	u32 count_value = 0;
+	// u32 reg_read = 0;
+	// u32 active_check = 0;
+	// u32 count_value = 0;
 
 	/*set dma_stop=1*/
 	//vpp_reg_write(core_id, 0x104, VPP_CONTROL0);
@@ -253,7 +259,6 @@ static int vpp_prepare_cmd_list(struct bm_vpp_dev *vdev,
 	}
 
 //	printk("pdes_vpp  0x%lx,&pdes_vpp  0x%lx,*pdes_vpp  0x%lx\n",pdes_vpp,&pdes_vpp,*pdes_vpp);
-	memcpy(*pdes_vpp, batch->cmd, batch->num * sizeof(struct vpp1686_descriptor_s));
 	return ret;
 }
 
@@ -587,11 +592,45 @@ static void dump_des(int core_id, struct vpp_batch *batch,
 
 }
 
-static int bm1684x_vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *batch)
+static int bm1684x_vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *batch, int core_id)
 {
 	int ret = VPP_OK, ret1 = 1;
-	int core_id = -1;
 
+	ret = vpp_prepare_cmd_list(vdev, batch, pdes[core_id], des_paddr[core_id]);
+	if (ret != VPP_OK) {
+		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
+		return ret;
+	}
+
+	ret = vpp_setup_desc(core_id, vdev, batch, des_paddr[core_id]);
+	if (ret < 0) {
+		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
+		return ret;
+	}
+
+	atomic_inc(&s_vpp_usage_info.vpp_busy_status[core_id]);
+	if (core_id == 0)
+		ret1 = wait_event_timeout(wq_vpp0, got_event_vpp[core_id], HZ);
+	else
+		ret1 = wait_event_timeout(wq_vpp1, got_event_vpp[core_id], HZ);
+	atomic_dec(&s_vpp_usage_info.vpp_busy_status[core_id]);
+
+	if (ret1 == 0) {
+		pr_err("vpp wait_event_timeout! ret %d, core_id %d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
+			ret1, core_id, current->pid, current->tgid, vpp_idle_bit_map);
+		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
+		vpp_soft_rst(core_id);
+
+		ret = VPP_ERR_INT_TIMEOUT;
+	}
+	got_event_vpp[core_id] = 0;
+
+	return ret;
+}
+
+static int bm1684x_vpp_setup(struct bm_vpp_dev *vdev, struct vpp_batch *batch, struct vpp_batch *batch_tmp)
+{
+	int ret = VPP_OK, core_id = -1;
 	if (down_interruptible(&vpp_core_sem)) {
 		//pr_err("bm1684x vpp down_interruptible was interrupted\n");
 		return VPP_ERESTARTSYS;
@@ -606,39 +645,28 @@ static int bm1684x_vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *b
 	clk_vpp_open(vdev, core_id);
 #endif
 
-	ret = vpp_prepare_cmd_list(vdev, batch, pdes[core_id], des_paddr[core_id]);
-	if (ret != VPP_OK) {
-		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
+	batch->cmd = pdes[core_id][0];
+
+	ret = copy_from_user(batch->cmd, ((void *)batch_tmp->cmd),
+		(batch->num * sizeof(struct vpp1686_descriptor_s)));
+	if (ret != 0) {
+		pr_err("%s copy_from_user wrong,the number of bytes not copied %d,batch.num %d, single descriptor %lu, total need %lu\n",
+					__func__, ret, batch->num, sizeof(struct vpp1686_descriptor_s),
+					(batch->num * sizeof(struct vpp1686_descriptor_s)));
+		ret = VPP_ERR_COPY_FROM_USER;
 		goto gate_vpp;
 	}
 
-	ret = vpp_setup_desc(core_id, vdev, batch, des_paddr[core_id]);
-	if (ret < 0) {
-		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
-		goto gate_vpp;
+	ret = bm1684x_vpp_handle_setup(vdev, batch, core_id);
+	if ((ret != VPP_OK) && (ret != VPP_ERESTARTSYS)) {
+		pr_err("vpp_handle_setup wrong ,ret %d\n", ret);
+		ret = -1;
 	}
-
-	if (core_id == 0)
-		ret1 = wait_event_timeout(wq_vpp0, got_event_vpp[core_id], HZ);
-	else
-		ret1 = wait_event_timeout(wq_vpp1, got_event_vpp[core_id], HZ);
-	if (ret1 == 0) {
-		pr_err("vpp wait_event_timeout! ret %d, core_id %d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
-			ret1, core_id, current->pid, current->tgid, vpp_idle_bit_map);
-		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
-		vpp_soft_rst(core_id);
-
-		ret = VPP_ERR_INT_TIMEOUT;
-	}
-	got_event_vpp[core_id] = 0;
-
 gate_vpp:
 #if defined CLOCK_GATE
 	clk_vpp_gate(vdev, core_id);
 #endif
-
 	ret |= vpp_free_core_id(core_id);
-
 up_sem:
 	up(&vpp_core_sem);
 
@@ -647,7 +675,6 @@ up_sem:
 		//pr_err("vpp signal pending, ret=%d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
 		//       ret, current->pid, current->tgid, vpp_idle_bit_map);
 	}
-
 	return ret;
 }
 
@@ -667,37 +694,14 @@ static long vpp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			ret = VPP_ERR_COPY_FROM_USER;
 			break;
 		}
-
 		batch = batch_tmp;
-
-		batch.cmd = kzalloc(batch.num * (sizeof(struct vpp1686_descriptor_s)), GFP_KERNEL);
-		if (batch.cmd == NULL) {
-			ret = VPP_ENOMEM;
-			pr_err("%s kzalloc failed, batch_cmd is NULL\n", __func__);
-			break;
-		}
-
-		ret = copy_from_user(batch.cmd, ((void *)batch_tmp.cmd),
-			(batch.num * sizeof(struct vpp1686_descriptor_s)));
-		if (ret != 0) {
-			pr_err("%s copy_from_user wrong,the number of bytes not copied %d,batch.num %d, single descriptor %lu, total need %lu\n",
-						__func__, ret, batch.num, sizeof(struct vpp1686_descriptor_s),
-						(batch.num * sizeof(struct vpp1686_descriptor_s)));
-			kfree(batch.cmd);
-			ret = VPP_ERR_COPY_FROM_USER;
-			break;
-		}
-
-		ret = bm1684x_vpp_handle_setup(vdev, &batch);
-		if ((ret != VPP_OK) && (ret != VPP_ERESTARTSYS)) {
-			pr_err("vpp_handle_setup wrong ,ret %d\n", ret);
-			ret = -1;
-		}
-		kfree(batch.cmd);
+		ret = bm1684x_vpp_setup(vdev, &batch, &batch_tmp);
 		break;
+
 	case VPP_TOP_RST:
 		vpp_handle_reset(vdev);
 		break;
+
 #if defined CLOCK_GATE
 	case VPP_OPEN:
 		/* vpp0 top reset */
@@ -710,6 +714,7 @@ static long vpp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		clk_vpp_gate(vdev, 1);
 		break;
 #endif
+
 	default:
 		ret = VPP_ERR_INVALID_CMD;
 		break;
@@ -747,6 +752,48 @@ static int vpp_device_register(struct bm_vpp_dev *vdev)
 static u64 vpp_dma_mask = DMA_BIT_MASK(40);
 
 static const long des_unit = ALIGN(sizeof(struct vpp1686_descriptor_s), 16);
+
+static ssize_t info_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+{
+	char dat[512] = { 0 };
+	int len = 0, i = 0;
+	int err = 0;
+
+	len = strlen(dat);
+	sprintf(dat + len, "\"core\" : [\n");
+	for (i = 0; i < VPP_CORE_MAX - 1; i++) {
+		len = strlen(dat);
+		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}]\n",
+			i, s_vpp_usage_info.vpp_core_usage[i], s_vpp_usage_info.vpp_working_time_in_ms[i]*100/
+			s_vpp_usage_info.vpp_total_time_in_ms[i]);
+	}
+	len = strlen(dat);
+		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}]\n",
+			i, s_vpp_usage_info.vpp_core_usage[i], s_vpp_usage_info.vpp_working_time_in_ms[i]*100/
+			s_vpp_usage_info.vpp_total_time_in_ms[i]);
+
+	len = strlen(dat);
+	sprintf(dat + len, "\n");
+	len = strlen(dat) + 1;
+	if (size < len) {
+		pr_err("read buf too small\n");
+		return -EIO;
+	}
+	if (*ppos >= len)
+		return 0;
+
+	err = copy_to_user(buf, dat, len);
+	if (err)
+		return 0;
+
+	*ppos = len;
+
+	return len;
+}
+
+static const struct file_operations proc_info_operations = {
+	.read   = info_read,
+};
 
 static int bm_vpp_probe(struct platform_device *pdev)
 {
@@ -931,8 +978,14 @@ static int bm_vpp_probe(struct platform_device *pdev)
 		npu_reserved[0], npu_reserved[1]);
 	pr_info("vpu_reserved: base 0x%llx, size 0x%llx\n",
 		vpu_reserved[0], vpu_reserved[1]);
-
-
+	if (s_vpp_monitor_task == NULL) {
+		s_vpp_monitor_task = kthread_run(vpp_monitor_thread, &s_vpp_usage_info, "vpp_monitor");
+		if (s_vpp_monitor_task == NULL)
+			pr_info("create vpp monitor thread failed\n");
+		else
+			pr_info("create vpp monitor thread done\n");
+	}
+	entry = proc_create("vppinfo", 0, NULL, &proc_info_operations);
 	vpp_soft_rst(0);
 	vpp_soft_rst(1);
 	return 0;
@@ -944,7 +997,10 @@ static int bm_vpp_remove(struct platform_device *pdev)
 	const long des_size = ALIGN(VPP1686_CORE_MAX * des_core, PAGE_SIZE);
 
 	dma_free_coherent(&pdev->dev, des_size, pdes[0][0], des_paddr[0][0]);
-
+	if (entry) {
+		proc_remove(entry);
+		entry = NULL;
+	}
 	return 0;
 }
 
