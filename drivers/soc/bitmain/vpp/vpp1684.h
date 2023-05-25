@@ -1,6 +1,8 @@
 #ifndef _VPP_K_H_
 #define _VPP_K_H_
 
+#include "vpp_platform.h"
+
 /*vpp global control*/
 #define VPP_VERSION      (0x000)
 #define VPP_CONTROL0 (0x004)
@@ -242,7 +244,6 @@
 #define YUV422        4
 
 #define VPP_CROP_NUM_MAX (256)
-#define VPP_CORE_MAX (2)
 #define VPP_USED_MAP_UNINIT 0xffffffff
 
 struct vpp_descriptor {

@@ -23,7 +23,6 @@
 #include <linux/kthread.h>
 
 #include "vpp1684.h"
-#include "vpp_platform.h"
 
 #define BM_CDEV_VPP_NAME	"bm-vpp"
 #define BM_CDEV_VPP_CLASS	"bm-vpp-class"
