@@ -60,6 +60,10 @@
 	status = "disabled";
 };
 
+&ethernet0 {
+	phy-mode = "rgmii-txid";
+};
+
 &thermal_zones {
 	soc {
 		trips {
