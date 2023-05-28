@@ -39,6 +39,18 @@
 	};
 };
 
+&soc_tpuclk440m_trip {
+	temperature = <65000>;
+};
+
+&soc_tpuclk75m_trip {
+	temperature = <95000>;
+};
+
+&soc_crit_trip {
+	temperature = <105000>;
+};
+
 &vpu_reserved {
 	reg = <0x3 0x40000000 0x0 0x08000000>; // 128M, for VPU firmware
 	no-map;

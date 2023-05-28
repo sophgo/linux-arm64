@@ -23,7 +23,7 @@ struct bm1684_cooling_device {
 };
 
 #define MAX_TPU_CLK 550000000UL			// 550M
-#define MIN_TPU_CLK 75000000UL			// 75M
+#define MIN_TPU_CLK 25000000UL			// 25M
 #define MAX_CPU_CLK 2300000000UL		// 2.3G
 #define MIN_CPU_CLK 1150000000UL		// 1.15G
 #define HWLOCK_TPU_TIMEOUT 200			// 200ms
@@ -107,7 +107,7 @@ static int bm1684_cooling_set_cur_state(struct thermal_cooling_device *cdev,
 		ret |= clk_set_rate(bmcdev->cpu_clk, MAX_CPU_CLK);
 		break;
 	case 1:
-		ret = clk_set_rate(bmcdev->tpu_clk, (bmcdev->tpu_init_rate * 4)/5); // 80% of max performance
+		ret = clk_set_rate(bmcdev->tpu_clk, (bmcdev->tpu_init_rate * 3)/4); // 80% of max performance
 		ret |= clk_set_rate(bmcdev->cpu_clk, MIN_CPU_CLK);
 		break;
 	case 2:
