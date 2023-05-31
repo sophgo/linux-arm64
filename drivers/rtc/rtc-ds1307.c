@@ -1695,7 +1695,19 @@ static int ds1307_probe(struct i2c_client *client,
 			dev_warn(ds1307->dev, "SET TIME!\n");
 		}
 		break;
-
+	case ds_1307:
+		err = regmap_bulk_read(ds1307->regmap, chip->offset, regs,
+				sizeof(regs));
+		if (err) {
+			dev_err(ds1307->dev, "%s error %d\n", "read", err);
+			goto exit;
+		}
+		tmp = regs[DS1307_REG_SECS];
+		if (tmp & DS1307_BIT_CH) {
+			regmap_write(ds1307->regmap, DS1307_REG_SECS, 0);
+			dev_warn(ds1307->dev, "SET TIME!\n");
+		}
+		break;
 	case rx_8025:
 		err = regmap_bulk_read(ds1307->regmap,
 				       RX8025_REG_CTRL1 << 4 | 0x08, regs, 2);
