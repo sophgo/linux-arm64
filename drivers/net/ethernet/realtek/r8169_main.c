@@ -3468,7 +3468,8 @@ static void rtl8168h_2_hw_phy_config(struct rtl8169_private *tp)
 	rtl8168g_config_eee_phy(tp);
 	rtl_enable_eee(tp);
 
-	RTL_W16(tp, 0x18, 0x778f);
+	pr_info("sophgo set led flash!\n");
+	RTL_W16(tp, 0x18, 0x7780);
 }
 
 static void rtl8168ep_1_hw_phy_config(struct rtl8169_private *tp)
