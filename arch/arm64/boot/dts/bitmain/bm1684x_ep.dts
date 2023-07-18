@@ -69,6 +69,6 @@
 	};
 
 	info {
-		file-name = "bm1684_sc5_ep.dts";
+		file-name = "bm1684x_ep.dts";
 	};
 };
