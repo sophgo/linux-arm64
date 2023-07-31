@@ -199,5 +199,33 @@
 				function = "dbgi2c_r";
 			};
 		};
+
+		jtag0_acquire: jtag0_acquire {
+			mux {
+				groups = "jtag0_grp";
+				function = "jtag0_a";
+			};
+		};
+
+		jtag0_release: jtag0_release{
+			mux {
+				groups = "jtag0_grp";
+				function = "jtag0_r";
+			};
+		};
+
+		jtag1_acquire: jtag1_acquire {
+			mux {
+				groups = "jtag1_grp";
+				function = "jtag1_a";
+			};
+		};
+
+		jtag1_release: jtag1_release{
+			mux {
+				groups = "jtag1_grp";
+				function = "jtag1_r";
+			};
+		};
 	};
 };

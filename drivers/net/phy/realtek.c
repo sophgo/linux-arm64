@@ -214,11 +214,25 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 #ifdef CONFIG_ARCH_BITMAIN
 	np = of_find_node_by_name(of_root, "eth-sophgo-config");
 	if (np) {
+		u32 val;
+
 		if (!of_property_read_string(np, "autoneg", &sophgo_autoneg))
 			dev_info(&phydev->mdio.dev, "sophgo workaround, autoneg %s, speed 10M/s\n",
 				 sophgo_autoneg);
 		else
 			sophgo_autoneg = "enabled";
+
+		/* LED */
+		if (!of_property_read_u32(np, "led", &val)) {
+			dev_info(&phydev->mdio.dev, "sophgo fixup led 0x%04x\n", val);
+			phy_write_paged(phydev, 0xd04, 0x10, (u16)val);
+		}
+
+		/* CLKOUT */
+		if (!of_property_read_u32(np, "clkout", &val)) {
+			dev_info(&phydev->mdio.dev, "sophgo fixup clkout 0x%04x\n", val);
+			phy_write_paged(phydev, 0xd05, 0x11, (u16)val);
+		}
 	} else {
 		sophgo_autoneg = "enabled";
 	}
@@ -532,6 +546,16 @@ static struct phy_driver realtek_drvs[] = {
 		.config_init	= &rtl8211e_config_init,
 		.ack_interrupt	= &rtl821x_ack_interrupt,
 		.config_intr	= &rtl8211e_config_intr,
+		.suspend	= genphy_suspend,
+		.resume		= genphy_resume,
+		.read_page	= rtl821x_read_page,
+		.write_page	= rtl821x_write_page,
+	}, {
+		PHY_ID_MATCH_EXACT(0x001cc878),
+		.name		= "RTL8211F-VD-CG Gigabit Ethernet",
+		.config_init	= &rtl8211f_config_init,
+		.ack_interrupt	= &rtl8211f_ack_interrupt,
+		.config_intr	= &rtl8211f_config_intr,
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
 		.read_page	= rtl821x_read_page,

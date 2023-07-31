@@ -1,0 +1,175 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684x_evb.dtsi"
+#include <dt-bindings/input/input.h>
+
+/ {
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+	/delete-node/ tach@50029028;
+	info {
+		file-name = "bm1684x_se7_v1.dts";
+	};
+};
+
+&vpu_reserved {
+	reg = <0x3 0x40000000 0x0 0x08000000>; // 128M, for VPU firmware
+	no-map;
+};
+
+&ion_for_vpu {
+			compatible = "vpu-region";
+			reg = <0x3 0x48000000 0x0 0xb8000000>; // 3G
+};
+
+&ion_for_npu {
+			compatible = "npu-region";
+			reg = <0x1 0x24100000 0x0 0x96e00000>; // 2.5g
+};
+
+/ {
+	fl2000-custom {
+		compatible = "fl2000-custom";
+	};
+
+	gpiokeys: gpio-keys {
+		compatible = "gpio-keys";
+		status = "okay";
+
+		/*
+		gpio24 {
+			label = "GPIO Power Key";
+			linux,code = <KEY_POWER>;
+			gpios = <&port0a 24 GPIO_ACTIVE_LOW>;
+		};
+		*/
+	};
+
+	gpioleds: gpio-leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fan1_release &jtag1_release &dbgi2c_release>;
+		status = "okay";
+
+		gpio5 {
+			label = "USB30_HDMI_PWR_EN";
+			gpios = <&port0a 5 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio6 {
+			label = "VCC5V0_AUDIO_EN";
+			gpios = <&port0a 6 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio7 {
+			label = "SATA_PWR_EN";
+			gpios = <&port0a 7 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio9 {
+			label = "USB20_5V_EN";
+			gpios = <&port0a 9 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio10 {
+			label = "USB30_VCC5V0_EN";
+			gpios = <&port0a 10 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio11 {
+			label = "HUB20_PWR_EN";
+			gpios = <&port0a 11 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio18 {
+			label = "PCIE_SW";
+			gpios = <&port0a 18 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio19 {
+			label = "4G_PWR_SW";
+			gpios = <&port0a 19 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gpio21 {
+			label = "USB30_HUB_RST";
+			gpios = <&port0a 21 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		gpio29 {
+			label = "WORK_LED";
+			gpios = <&port0a 29 GPIO_ACTIVE_HIGH>; /* DBG_IIC_SCL/GPIO29 */
+			default-state = "on";
+		};
+
+		gpio30 {
+			label = "WIFI_PWR_EN";
+			gpios = <&port0a 30 GPIO_ACTIVE_HIGH>; /* DBG_IIC_SDA/GPIO30 */
+			default-state = "off";
+		};
+
+		gpio78 {
+			label = "DIY_LED";
+			gpios = <&port2a 14 GPIO_ACTIVE_HIGH>; /* FAN1 / GPIO78 */
+			default-state = "off";
+		};
+	};
+
+	/* EXT_PWR_EN */
+	gpio_poweroff {
+		compatible = "gpio-poweroff";
+		gpios = <&port0a 17 GPIO_ACTIVE_LOW>;
+                input;
+	};
+
+	pwmfan: pwm-fan {
+		compatible = "pwm-fan";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm0_acquire>;
+		pwms = <&pwm 0 40000>; // period_ns
+		pwm-names = "pwm0";
+		pwm_inuse = "pwm0";
+		#cooling-cells = <2>;
+		cooling-levels = <0 160 192 224 255>;  //total 255
+	};
+
+};
+
+&ethernet0 {
+	eth-sophgo-config {
+		led = <0xae00>;
+		clkout = <0x0e02>;
+	};
+};
+
+&ethernet1 {
+	eth-sophgo-config {
+		led = <0xae00>;
+		clkout = <0x0e02>;
+	};
+};
+
+&i2c0 {
+	hym8563: hym8563@51 {
+		compatible = "haoyu,hym8563";
+		reg = <0x51>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&jtag0_release>;
+        /* RTCIC_INT_L -> GPIO20 */
+		interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-parent = <&port0a>;
+	};
+};
+
+&i2c1 {
+	/delete-node/ rtc@68;
+};

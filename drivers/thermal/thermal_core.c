@@ -390,6 +390,7 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
 				  int trip, enum thermal_trip_type trip_type)
 {
 	int trip_temp;
+	static int reached_num = 0;
 
 	tz->ops->get_trip_temp(tz, trip, &trip_temp);
 
@@ -403,6 +404,14 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
 		tz->ops->notify(tz, trip, trip_type);
 
 	if (trip_type == THERMAL_TRIP_CRITICAL) {
+		reached_num++;
+		dev_emerg(&tz->device,
+				  "critical temperature reached (%d C)[%d]\n",
+				  tz->temperature / 1000, reached_num);
+	} else {
+		reached_num = 0;
+	}
+	if (trip_type == THERMAL_TRIP_CRITICAL && reached_num >= 5) {
 		dev_emerg(&tz->device,
 			  "critical temperature reached (%d C), shutting down\npoweroff triggered=%d\n",
 			  tz->temperature / 1000, power_off_triggered);
