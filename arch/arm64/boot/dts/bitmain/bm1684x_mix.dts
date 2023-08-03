@@ -63,6 +63,6 @@
 	};
 
 	info {
-		file-name = "bm1684x_mix.dts";
+		file-name = "bm1684x_mix.dtb";
 	};
 };

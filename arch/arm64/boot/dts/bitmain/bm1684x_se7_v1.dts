@@ -8,7 +8,7 @@
 	/delete-node/ clp890@50018000;
 	/delete-node/ tach@50029028;
 	info {
-		file-name = "bm1684x_se7_v1.dts";
+		file-name = "bm1684x_se7_v1.dtb";
 	};
 };
 

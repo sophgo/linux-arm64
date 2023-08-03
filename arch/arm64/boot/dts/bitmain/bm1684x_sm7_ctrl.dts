@@ -11,7 +11,7 @@
 	/delete-node/ jpu@50030000; // delete jpu
 	/delete-node/ vpu@50050000; // delete vpu
 	info {
-		file-name = "bm1684x_sm7_ctrl.dts";
+		file-name = "bm1684x_sm7_ctrl.dtb";
 	};
 };
 

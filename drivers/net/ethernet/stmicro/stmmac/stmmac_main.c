@@ -3854,8 +3854,14 @@ static irqreturn_t stmmac_interrupt(int irq, void *dev_id)
 		pm_wakeup_event(priv->device, 0);
 
 	/* Check if adapter is up */
-	if (test_bit(STMMAC_DOWN, &priv->state))
+	if (test_bit(STMMAC_DOWN, &priv->state)) {
+		#ifdef CONFIG_ARCH_BITMAIN
+		/* clear interrupt status */
+		for (queue = 0; queue < queues_count; queue++)
+			writel(0xf, priv->ioaddr + 0x1100 + (queue * 0x80) + 0x60);
+		#endif
 		return IRQ_HANDLED;
+	}
 	/* Check if a fatal error happened */
 	if (stmmac_safety_feat_interrupt(priv))
 		return IRQ_HANDLED;

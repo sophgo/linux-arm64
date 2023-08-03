@@ -30,6 +30,6 @@
 
 / {
 	info {
-		file-name = "bm1684_sm5m_v3.1_tb.dts";
+		file-name = "bm1684_sm5m_v3.1_tb.dtb";
 	};
 };
