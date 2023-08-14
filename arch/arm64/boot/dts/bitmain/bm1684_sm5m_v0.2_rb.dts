@@ -4,7 +4,7 @@
 
 / {
 	info {
-		file-name = "bm1684_sm5m_v0.2_rb.dts";
+		file-name = "bm1684_sm5m_v0.2_rb.dtb";
 	};
 };
 

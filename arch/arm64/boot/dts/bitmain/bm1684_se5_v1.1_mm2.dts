@@ -2,7 +2,7 @@
 
 / {
 	info {
-		file-name = "bm1684_se5_v1.1_mm2.dts"; // for cust01
+		file-name = "bm1684_se5_v1.1_mm2.dtb"; // for cust01
 	};
 };
 

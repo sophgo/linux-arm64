@@ -82,6 +82,7 @@ static struct ignore_entry ignore_ids[] = {
 #	include "unusual_sddr09.h"
 #	include "unusual_sddr55.h"
 #	include "unusual_usbat.h"
+UNUSUAL_DEV(0x1d5c, 0x2000, 0x0200, 0x0200, NULL, NULL, NULL, NULL, NULL, NULL),
 	{ }		/* Terminating entry */
 };
 

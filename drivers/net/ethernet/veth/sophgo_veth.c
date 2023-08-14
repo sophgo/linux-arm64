@@ -28,8 +28,7 @@ static irqreturn_t veth_irq(int irq, void *id)
 
 	if (atomic_read(&vdev->link)) {
 		if (pt_load_rx(vdev->pt)) {
-			disable_irq_nosync(irq);
-			napi_schedule_irqoff(&vdev->napi);
+			napi_schedule(&vdev->napi);
 		}
 	}
 	intr_clear(vdev);
@@ -44,26 +43,16 @@ static void sg_enable_eth_irq(struct veth_dev *vdev)
 	intc_enable = sg_read32(vdev->intc_cfg_reg, 4);
 	intc_enable |= (1 << 18);
 	sg_write32(vdev->intc_cfg_reg, 0x4, intc_enable);
+	intc_mask = sg_read32(vdev->intc_cfg_reg, 0xc);
+	intc_mask &= ~(1 << 18);
+	sg_write32(vdev->intc_cfg_reg, 0xc, intc_mask);
 }
 
 static int notify_host(struct veth_dev *vdev)
 {
-	int counter;
-
+	u32 data;
 	if (atomic_read(&vdev->link)) {
-		u32 data = sg_read32(vdev->top_misc_reg, TOP_MISC_GP_REG14_STS_OFFSET);
-
-		counter = 0;
-		while ((0x4 & data) != 0) {
-			data = sg_read32(vdev->top_misc_reg, TOP_MISC_GP_REG14_STS_OFFSET);
-			counter++;
-			if (counter > 100000) {
-				pr_info("notify host timeout!\n");
-				return NETDEV_TX_BUSY;
-			}
-		}
-		data = sg_read32(vdev->top_misc_reg, TOP_MISC_GP_REG14_STS_OFFSET);
-		data |= 0x4;
+		data = 0x4;
 		sg_write32(vdev->top_misc_reg, TOP_MISC_GP_REG14_SET_OFFSET, data);
 	}
 	sg_enable_eth_irq(vdev);
@@ -117,8 +106,10 @@ static netdev_tx_t veth_xmit(struct sk_buff *skb, struct net_device *ndev)
 
 	pt_load_tx(vdev->pt);
 	err = pt_send(vdev->pt, skb->data, skb->len);
-	if (err < 0)
+	if (err < 0) {
+		notify_host(vdev);
 		return NETDEV_TX_BUSY;
+	}
 
 	ret = pt_store_tx(vdev->pt);
 	if (ret != NETDEV_TX_OK) {
@@ -129,6 +120,7 @@ static netdev_tx_t veth_xmit(struct sk_buff *skb, struct net_device *ndev)
 	ret = notify_host(vdev);
 	if (ret == NETDEV_TX_BUSY)
 		return ret;
+
 	++ndev->stats.tx_packets;
 	ndev->stats.tx_bytes += err;
 	dev_kfree_skb_any(skb);
@@ -184,7 +176,10 @@ static int veth_rx(struct veth_dev *vdev, int limit)
 		napi_gro_receive(&vdev->napi, skb);
 		++ndev->stats.rx_packets;
 		ndev->stats.rx_bytes += err;
+
+		pkg_cnt++;
 	}
+
 	return pkg_cnt;
 }
 
@@ -195,7 +190,6 @@ static int veth_napi_poll_rx(struct napi_struct *napi, int budget)
 
 	vdev = container_of(napi, struct veth_dev, napi);
 	err = veth_rx(vdev, budget);
-	enable_irq(vdev->rx_irq);
 
 	return err;
 }
@@ -210,13 +204,10 @@ static void net_state_work(struct work_struct *worker)
 	ndev = vdev->ndev;
 	dev = &vdev->pdev->dev;
 
-	while (sg_read32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET))
-		msleep(20);
-
 	sg_write32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET, DEVICE_READY_FLAG);
 
 	while (sg_read32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET) != HOST_READY_FLAG)
-		msleep(20);
+		mdelay(10);
 	/* i am ready again */
 	sg_write32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET, DEVICE_READY_FLAG);
 	vdev->pt = pt_init(dev, vdev->shm_cfg_reg, vdev);
@@ -234,6 +225,11 @@ static void net_state_work(struct work_struct *worker)
 
 static int set_ready_flag(struct veth_dev *vdev)
 {
+	if (sg_read32(vdev->shm_cfg_reg, SHM_HANDSHAKE_OFFSET)) {
+		pr_err("handshake register not clear!\n");
+		return -EINVAL;
+	}
+
 	INIT_WORK(&vdev->net_state_worker, net_state_work);
 	schedule_work(&vdev->net_state_worker);
 

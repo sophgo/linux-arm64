@@ -599,6 +599,48 @@ static void option_instat_callback(struct urb *urb);
 /* Device needs ZLP */
 #define ZLP		BIT(17)
 
+struct option_blacklist_info {
+	/* bitmask of interface numbers blacklisted for send_setup */
+	const unsigned long sendsetup;
+	/* bitmask of interface numbers that are reserved */
+	const unsigned long reserved;
+};
+
+/*fibocom fm650*/
+static const struct option_blacklist_info fibocom_b45_blacklist = {
+	.reserved = BIT(4) | BIT(5),
+};
+static const struct option_blacklist_info fibocom_b456_blacklist = {
+	.reserved = BIT(4) | BIT(5) | BIT(6),
+};
+static const struct option_blacklist_info fibocom_b34_blacklist = {
+	.reserved = BIT(3) | BIT(4),
+};
+static const struct option_blacklist_info fibocom_b2_blacklist = {
+	.reserved = BIT(2),
+};
+static const struct option_blacklist_info fibocom_b3_blacklist = {
+	.reserved = BIT(3),
+};
+static const struct option_blacklist_info fibocom_b23_blacklist = {
+	.reserved = BIT(2) | BIT(3),
+};
+static const struct option_blacklist_info fibocom_b014_blacklist = {
+	.reserved = BIT(0) | BIT(1) | BIT(4),
+};
+static const struct option_blacklist_info fibocom_b01_blacklist = {
+	.reserved = BIT(0) | BIT(1),
+};
+static const struct option_blacklist_info fibocom_b4_blacklist = {
+	.reserved = BIT(4),
+};
+static const struct option_blacklist_info fibocom_b016_blacklist = {
+	.reserved = BIT(0) | BIT(1) | BIT(6),
+};
+static const struct option_blacklist_info fibocom_b017_blacklist = {
+	.reserved = BIT(0) | BIT(1) | BIT(7),
+};
+/*fibocom fm650*/
 
 static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
@@ -633,6 +675,20 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
 	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
 	  .driver_info = RSVD(4) },
+	/*start FG650 & FM650*/
+	{ USB_DEVICE(0x2CB7, 0x0A05), /*FG650 & FM650 USBMODE = 36*/
+	  .driver_info = (kernel_ulong_t)&fibocom_b01_blacklist },
+	{ USB_DEVICE(0x2CB7, 0x0A06), /*FG650 & FM650 USBMODE = 38*/
+	  .driver_info = (kernel_ulong_t)&fibocom_b01_blacklist },
+	{ USB_DEVICE(0x2CB7, 0x0A07), /*FG650 & FM650 USBMODE = 40*/
+	  .driver_info = (kernel_ulong_t)&fibocom_b01_blacklist },
+	{ USB_DEVICE(0x2CB7, 0x0A05), /*FG650 & FM650 USBMODE = 37*/
+	  .driver_info = (kernel_ulong_t)&fibocom_b016_blacklist },
+	{ USB_DEVICE(0x2CB7, 0x0A06), /*FG650 & FM650 USBMODE = 39*/
+	  .driver_info = (kernel_ulong_t)&fibocom_b016_blacklist },
+	{ USB_DEVICE(0x2CB7, 0x0A07), /*FG650 & FM650 USBMODE = 41*/
+	  .driver_info = (kernel_ulong_t)&fibocom_b016_blacklist },
+	/*end FG650 & FM650*/
 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c05, USB_CLASS_COMM, 0x02, 0xff) },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c1f, USB_CLASS_COMM, 0x02, 0xff) },
 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },

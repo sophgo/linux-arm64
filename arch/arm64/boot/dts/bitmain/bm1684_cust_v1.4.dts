@@ -4,7 +4,7 @@
 
 / {
 	info {
-		file-name = "bm1684_cust_v1.4.dts";
+		file-name = "bm1684_cust_v1.4.dtb";
 	};
 };
 
