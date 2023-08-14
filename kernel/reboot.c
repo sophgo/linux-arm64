@@ -476,6 +476,7 @@ static int __orderly_poweroff(bool force)
 }
 
 static bool poweroff_force;
+static unsigned long poweroff_time;
 
 static void poweroff_work_func(struct work_struct *work)
 {
@@ -495,6 +496,21 @@ void orderly_poweroff(bool force)
 {
 	if (force) /* do not override the pending "true" */
 		poweroff_force = true;
+	if (!poweroff_time) {
+		poweroff_time = jiffies;
+	} else {
+		if (time_after(jiffies, poweroff_time + HZ * 15)) {
+			pr_warn("Orderly shutdown timeout: forcing the issue\n");
+
+			/*
+			 * I guess this should try to kick off some daemon to sync and
+			 * poweroff asap.  Or not even bother syncing if we're doing an
+			 * emergency shutdown?
+			 */
+			emergency_sync();
+			kernel_power_off();
+		}
+	}
 	schedule_work(&poweroff_work);
 }
 EXPORT_SYMBOL_GPL(orderly_poweroff);

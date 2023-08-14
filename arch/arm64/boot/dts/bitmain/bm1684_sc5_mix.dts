@@ -62,7 +62,7 @@
 	};
 
 	info {
-		file-name = "bm1684_sc5_mix.dts";
+		file-name = "bm1684_sc5_mix.dtb";
 	};
 };
 

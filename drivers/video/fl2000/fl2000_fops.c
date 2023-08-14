@@ -54,7 +54,7 @@ int fl2000_open(struct inode * inode, struct file * file)
 		);
 
 	file->private_data = dev_ctx;
-	kref_get(&dev_ctx->kref);
+	kref_get_unless_zero(&dev_ctx->kref);
 exit:
 	return ret_val;
 }

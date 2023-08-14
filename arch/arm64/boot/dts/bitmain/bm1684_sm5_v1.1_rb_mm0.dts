@@ -2,7 +2,7 @@
 
 / {
 	info {
-		file-name = "bm1684_sm5_v1.1_rb_mm0.dts";
+		file-name = "bm1684_sm5_v1.1_rb_mm0.dtb";
 	};
 };
 

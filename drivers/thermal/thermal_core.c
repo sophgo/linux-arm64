@@ -390,7 +390,9 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
 				  int trip, enum thermal_trip_type trip_type)
 {
 	int trip_temp;
-
+	#ifdef CONFIG_ARCH_BITMAIN
+	static int reached_num;
+	#endif
 	tz->ops->get_trip_temp(tz, trip, &trip_temp);
 
 	/* If we have not crossed the trip_temp, we do not care. */
@@ -402,7 +404,21 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
 	if (tz->ops->notify)
 		tz->ops->notify(tz, trip, trip_type);
 
+	#ifdef CONFIG_ARCH_BITMAIN
 	if (trip_type == THERMAL_TRIP_CRITICAL) {
+		reached_num++;
+		dev_emerg(&tz->device,
+				  "critical temperature reached (%d C)[%d]\n",
+				  tz->temperature / 1000, reached_num);
+	} else {
+		reached_num = 0;
+	}
+	#endif
+	#ifdef CONFIG_ARCH_BITMAIN
+	if (trip_type == THERMAL_TRIP_CRITICAL && reached_num >= 5) {
+	#else
+	if (trip_type == THERMAL_TRIP_CRITICAL) {
+	#endif
 		dev_emerg(&tz->device,
 			  "critical temperature reached (%d C), shutting down\npoweroff triggered=%d\n",
 			  tz->temperature / 1000, power_off_triggered);

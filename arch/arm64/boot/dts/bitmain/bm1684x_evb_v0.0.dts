@@ -6,7 +6,7 @@
 	/delete-node/ pka@58008000;
 	/delete-node/ clp890@50018000;
 	info {
-		file-name = "bm1684x_evb_v0.0.dts";
+		file-name = "bm1684x_evb_v0.0.dtb";
 	};
 };
 
