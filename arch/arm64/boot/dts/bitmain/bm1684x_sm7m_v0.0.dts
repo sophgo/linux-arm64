@@ -24,11 +24,11 @@
 
 &ion_for_npu {
 			compatible = "npu-region";
-			reg = <0x1 0x5100000 0x0 0x80000000>; // 2GB
+			reg = <0x1 0x51000000 0x0 0x80000000>; // 2GB
 };
 
 &ion_for_vpp {
-			compatible = "npu-region";
+			compatible = "vpp-region";
 			reg = <0x4 0x00000000 0x1 0x00000000>; // 4G, for VPP/JPU
 };
 / {
