@@ -311,14 +311,14 @@ int pt_send(struct pt *pt, void *data, int len)
 	q = &pt->tx.lq;
 	hq = &pt->tx.hq;
 	if (local_queue_free(q) < total_len) {
-		pr_info("local_queue_free(q): 0x%x, total_len: 0x%x\n", local_queue_free(q), total_len);
+		// pr_info("local_queue_free(q): 0x%x, total_len: 0x%x\n", local_queue_free(q), total_len);
 
-		pr_info("q->head: 0x%x\n", q->head);
-		pr_info("q->tail: 0x%x\n", q->tail);
-		val = host_queue_get_head(hq);
-		pr_info("host head: 0x%x\n", val);
-		val = host_queue_get_tail(hq);
-		pr_info("host tail: 0x%x\n", val);
+		// pr_info("q->head: 0x%x\n", q->head);
+		// pr_info("q->tail: 0x%x\n", q->tail);
+		// val = host_queue_get_head(hq);
+		// pr_info("host head: 0x%x\n", val);
+		// val = host_queue_get_tail(hq);
+		// pr_info("host tail: 0x%x\n", val);
 		return -ENOMEM;
 	}
 
