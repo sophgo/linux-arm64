@@ -20,6 +20,7 @@
  * Callbacks for platform drivers to implement.
  */
 extern void (*pm_power_off)(void);
+extern void (*pm_power_off2)(void);
 extern void (*pm_power_off_prepare)(void);
 
 struct device; /* we have a circular dep with device.h */
