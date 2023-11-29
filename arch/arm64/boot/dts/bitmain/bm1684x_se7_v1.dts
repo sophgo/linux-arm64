@@ -173,3 +173,19 @@
 &i2c1 {
 	/delete-node/ rtc@68;
 };
+
+&soc_pwmfan_trip1 {
+	temperature = <33000>; /* millicelsius */
+};
+
+&soc_pwmfan_trip2 {
+	temperature = <45000>; /* millicelsius */
+};
+
+&soc_pwmfan_trip3 {
+	temperature = <55000>; /* millicelsius */
+};
+
+&soc_pwmfan_trip4 {
+	temperature = <60000>; /* millicelsius */
+};

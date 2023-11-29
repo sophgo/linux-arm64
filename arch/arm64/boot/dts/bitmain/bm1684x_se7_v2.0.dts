@@ -1,3 +1,26 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684_se5.dtsi"
+
+/ {
+	info {
+		file-name = "bm1684x_se7_v2.0.dtb";
+	};
+	/delete-node/ pka@58008000;
+};
+
+&soc_tpuclk440m_trip {
+	temperature = <95000>;
+};
+
+&soc_tpuclk75m_trip {
+	temperature = <105000>;
+};
+
+&soc_crit_trip {
+	temperature = <110000>;
+};
+
 &clock_init {
 	clock-rates = \
 		<2300000000>, <950000000>, <800000000>,
@@ -22,5 +45,4 @@
 		<1000000001>,
 		<800000000>, <800000001>,
 		<2300000001>, <575000000>;
-		};
-
+};

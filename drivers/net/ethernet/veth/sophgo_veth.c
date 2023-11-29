@@ -12,7 +12,10 @@
 #include "sophgo_common.h"
 #include "sophgo_veth.h"
 
+// #define VETH_IRQ
+
 static int set_ready_flag(struct veth_dev *vdev);
+void __iomem *vaddr;
 
 static inline void intr_clear(struct veth_dev *vdev)
 {
@@ -51,11 +54,18 @@ static void sg_enable_eth_irq(struct veth_dev *vdev)
 static int notify_host(struct veth_dev *vdev)
 {
 	u32 data;
+#ifdef VETH_IRQ
 	if (atomic_read(&vdev->link)) {
 		data = 0x4;
 		sg_write32(vdev->top_misc_reg, TOP_MISC_GP_REG14_SET_OFFSET, data);
 	}
 	sg_enable_eth_irq(vdev);
+#else
+	if (atomic_read(&vdev->link)) {
+		data = 0x1;
+		sg_write32(vaddr, 0x60, data);
+	}
+#endif
 	return NETDEV_TX_OK;
 }
 
@@ -171,7 +181,6 @@ static int veth_rx(struct veth_dev *vdev, int limit)
 		skb_reserve(skb, NET_IP_ALIGN);
 		err = pt_recv(pt, skb_put(skb, pkg_len), pkg_len);
 		/* free space as soon as possible */
-		pt_store_rx(pt);
 		skb->protocol = eth_type_trans(skb, ndev);
 		napi_gro_receive(&vdev->napi, skb);
 		++ndev->stats.rx_packets;
@@ -180,6 +189,7 @@ static int veth_rx(struct veth_dev *vdev, int limit)
 		pkg_cnt++;
 	}
 
+	pt_store_rx(pt);
 	return pkg_cnt;
 }
 
@@ -313,6 +323,7 @@ static int sg_veth_probe(struct platform_device *pdev)
 	struct net_device *ndev;
 	int err;
 	struct device_node *node;
+	u64 paddr = 0x101fb400;
 
 	node = of_find_compatible_node(NULL, NULL, "sophgon, veth");
 	if (!of_device_is_available(node)) {
@@ -353,6 +364,9 @@ static int sg_veth_probe(struct platform_device *pdev)
 		pr_err("register net device failed!\n");
 		goto err_free_netdev;
 	}
+
+	vaddr = ioremap(paddr, 0x100);
+
 	return 0;
 
 err_free_netdev:
