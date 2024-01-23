@@ -189,4 +189,3 @@
 &soc_pwmfan_trip4 {
 	temperature = <60000>; /* millicelsius */
 };
-

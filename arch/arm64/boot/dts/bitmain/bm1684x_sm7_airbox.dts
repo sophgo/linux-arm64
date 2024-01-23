@@ -1,0 +1,86 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684x_evb.dtsi"
+
+/ {
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+	info {
+		file-name = "bm1684x_airbox.dtb";
+	};
+};
+
+&vpu_reserved {
+	reg = <0x3 0x40000000 0x0 0x08000000>; // 128M, for VPU firmware
+	no-map;
+};
+
+&ion_for_vpp {
+	compatible = "vpp-region";
+	reg = <0x4 0x1194d800 0x0 0xee6b2800>; // 3.725G
+};
+
+&ion_for_vpu {
+	compatible = "vpu-region";
+	reg = <0x3 0x48000000 0x0 0xb7ff0000>; // 2.875G
+};
+
+&ion_for_npu {
+	compatible = "npu-region";
+	reg = <0x1 0x24100000 0x1 0xdbf00000>; // 7.436Gg
+};
+
+&clock_init {
+	clock-rates = \
+		<2300000000>, <950000000>, <800000000>,
+
+		<1000000000>, <1000000000>,
+		<2000000000>, <50000000>,
+		<100000000>, <100000000>,
+		<125000000>, <50000000>,
+		<25000000>, <125000000>,
+		<50000000>, <25000000>,
+		<500000000>, <25000000>,
+		<1000000000>, <500000000>,
+		<800000000>, <100000000>,
+		<250000000>, <250000000>,
+		<500000000>, <500000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<100000>, <100000>, <100000>,
+
+		<1000000001>,
+		<800000000>, <800000001>,
+		<2300000001>, <575000000>;
+		};
+
+&thermal_zones {
+	soc {
+		trips {
+			/delete-node/ soc_pwmfan_trip@0;
+			/delete-node/ soc_pwmfan_trip@1;
+			/delete-node/ soc_pwmfan_trip@2;
+			/delete-node/ soc_pwmfan_trip@3;
+			/delete-node/ soc_pwmfan_trip@4;
+		};
+
+		cooling-maps {
+			/delete-node/ map3;
+			/delete-node/ map4;
+			/delete-node/ map5;
+			/delete-node/ map6;
+			/delete-node/ map7;
+		};
+	};
+};
+
+&pwm{
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_acquire>;
+};
+
+&pwmfan {
+	status = "disabled";
+};
