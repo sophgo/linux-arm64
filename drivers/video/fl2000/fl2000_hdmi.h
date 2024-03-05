@@ -16,6 +16,7 @@
 
 #define HDMI_ITE_VENDER_ID                      ( 0x4954 )
 #define HDMI_ITE_DEVICE_ID                      ( 0x612 )
+#define HDMI_ITE_DEVICE_ID_122                  ( 0x622 )
 
 #define HDMI_ITE_EACH_TIME_READ_EDID_MAX_SIZE   ( 0x20 )
 
