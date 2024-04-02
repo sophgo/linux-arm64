@@ -978,7 +978,8 @@ fl2000_hdmi_find_chip(struct dev_ctx * dev_ctx)
                 const uint32_t deviceID = (data >> 16 & 0xFFF);
 
                 if (venderID == HDMI_ITE_VENDER_ID &&
-                    deviceID == HDMI_ITE_DEVICE_ID)
+			( deviceID == HDMI_ITE_DEVICE_ID ||
+		 	  deviceID == HDMI_ITE_DEVICE_ID_122 ))
                         found_hdmi = true;
         }
 
