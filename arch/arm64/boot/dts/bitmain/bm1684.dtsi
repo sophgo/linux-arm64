@@ -534,7 +534,7 @@
 
 	aliases {
 		ethernet0 = &ethernet0;
-		ethernet1 = &ethernet1;
+		// ethernet1 = &ethernet1;
 	};
 
 	ethernet0: ethernet@50108000 {
@@ -562,6 +562,10 @@
 		snps,mtl-tx-config = <&mtl_tx_setup>;
 
 		phy-mode = "rgmii-id";
+		fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
 	};
 
 	ethernet1: ethernet@5010C000 {
@@ -868,7 +872,7 @@
 		reg-bitwidth = <32>;
 		interrupt-controller;
 		#interrupt-cells = <0x2>; // only applies to child node
-		for-msi;
+		// for-msi;
 
 		interrupt-parent = <&gic>;
 		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>,
@@ -898,7 +902,7 @@
 		 * IRQ48 yet. We added a workaround in driver to skip
 		 * it by marking it as used at the first place.
 		 */
-		status = "okay";
+		status = "disabled";
 
 		top_intc_test@0 {
 			compatible = "bitmain,top-intc-test";
