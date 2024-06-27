@@ -7,14 +7,20 @@
 		file-name = "bm1684x_se7_v2.0.dtb";
 	};
 	/delete-node/ pka@58008000;
+	/delete-node/ bm1684_cooling;
 };
 
-&soc_tpuclk440m_trip {
-	temperature = <95000>;
-};
-
-&soc_tpuclk75m_trip {
-	temperature = <105000>;
+&thermal_zones {
+	soc {
+		trips {
+			/delete-node/ soc_tpuclk440m_trip;
+			/delete-node/ soc_tpuclk75m_trip;
+		};
+		cooling-maps {
+			/delete-node/ map0;
+			/delete-node/ map1;
+		};
+	};
 };
 
 &soc_crit_trip {

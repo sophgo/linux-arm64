@@ -15,7 +15,6 @@
 // #define VETH_IRQ
 
 static int set_ready_flag(struct veth_dev *vdev);
-void __iomem *vaddr;
 
 static inline void intr_clear(struct veth_dev *vdev)
 {
@@ -43,7 +42,7 @@ static void sg_enable_eth_irq(struct veth_dev *vdev)
 	u32 intc_enable;
 	u32 intc_mask;
 
-	intc_enable = sg_read32(vdev->intc_cfg_reg, 4);
+	intc_enable = sg_read32(vdev->intc_cfg_reg, 0x4);
 	intc_enable |= (1 << 18);
 	sg_write32(vdev->intc_cfg_reg, 0x4, intc_enable);
 	intc_mask = sg_read32(vdev->intc_cfg_reg, 0xc);
@@ -63,7 +62,7 @@ static int notify_host(struct veth_dev *vdev)
 #else
 	if (atomic_read(&vdev->link)) {
 		data = 0x1;
-		sg_write32(vaddr, 0x60, data);
+		sg_write32(vdev->shm_cfg_reg, 0x60, data);
 	}
 #endif
 	return NETDEV_TX_OK;
@@ -323,7 +322,6 @@ static int sg_veth_probe(struct platform_device *pdev)
 	struct net_device *ndev;
 	int err;
 	struct device_node *node;
-	u64 paddr = 0x101fb400;
 
 	node = of_find_compatible_node(NULL, NULL, "sophgon, veth");
 	if (!of_device_is_available(node)) {
@@ -364,8 +362,6 @@ static int sg_veth_probe(struct platform_device *pdev)
 		pr_err("register net device failed!\n");
 		goto err_free_netdev;
 	}
-
-	vaddr = ioremap(paddr, 0x100);
 
 	return 0;
 

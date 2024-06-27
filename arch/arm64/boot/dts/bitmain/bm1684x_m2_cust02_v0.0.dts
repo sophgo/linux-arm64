@@ -5,14 +5,32 @@
 / {
 	/delete-node/ pka@58008000;
 	/delete-node/ clp890@50018000;
+	/delete-node/ pwm-fan;
+
+	/delete-node/ bm1684_cooling;
+	/delete-node/ thermal-zones;
+
 	info {
-		file-name = "bm1684x_sm7m_v1.0.dtb";
+		file-name = "bm1684x_m2_cust02_v0.0.dtb";
 	};
+};
+
+&i2c1 {
+	/delete-node/ tmp451@6b;
+	/delete-node/ rtc@68;
+	/delete-node/ bm16xxwdt@69;
+	/delete-node/ bm16xxeeprom@6a;
+	/delete-node/ bm16xxmcu@17;
+};
+
+&ion_for_npu {
+	compatible = "npu-region";
+	reg = <0x1 0x24100000 0x1 0xDBF00000>; // 7.5GB
 };
 
 &clock_init {
 	clock-rates = \
-		<2300000000>, <950000000>, <800000000>,
+		<2300000000>, <850000000>, <800000000>,
 
 		<1000000000>, <1000000000>,
 		<2000000000>, <50000000>,
@@ -34,4 +52,4 @@
 		<1000000001>,
 		<800000000>, <800000001>,
 		<2300000001>, <575000000>;
-		};
+};

@@ -339,15 +339,17 @@ int pt_send(struct pt *pt, void *data, int len)
 int pt_pkg_len(struct pt *pt)
 {
 	struct local_queue *q = &pt->rx.lq;
-	u32 *pkg_len;
+	u32 pkg_len;
 
 	if (q->head == q->tail)
 		return -ENOMEM;
 
-	pkg_len = (u32 *)((u8 *)q->cpu + q->tail);
-	WARN((unsigned long)pkg_len & (sizeof(pkg_len) - 1), "rx queue not aligned correctly\n");
+	pkg_len = ioread32(q->cpu + q->tail);
+	// pkg_len = (u32 *)((u8 *)q->cpu + q->tail);
+	// WARN((unsigned long)pkg_len & (sizeof(pkg_len) - 1), "rx queue not aligned correctly\n");
 
-	return le32_to_cpu(*pkg_len);
+	WARN(((pkg_len < 0) || (pkg_len > 0x1000d)), "pkg_len: %d error\n", pkg_len);
+	return pkg_len;
 }
 
 int pt_recv(struct pt *pt, void *data, int len)

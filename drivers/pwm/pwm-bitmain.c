@@ -101,7 +101,7 @@ static int pwm_bm_config(struct pwm_chip *chip, struct pwm_device *pwm_dev,
 	cycles = cycles * duty_ns;
 	do_div(cycles, period_ns);
 	channel->hlperiod = channel->period - cycles;
-	dev_info(chip->dev, "period_ns=%d,duty_ns=%d,period=%d,hlperiod=%d\n",
+	dev_dbg(chip->dev, "period_ns=%d,duty_ns=%d,period=%d,hlperiod=%d\n",
 			period_ns, duty_ns, channel->period, channel->hlperiod);
 
 	return 0;

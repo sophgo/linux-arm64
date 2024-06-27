@@ -8,6 +8,9 @@
 	/delete-node/ vpp@50070000; // delete vpp
 	/delete-node/ jpu@50030000; // delete jpu
 	/delete-node/ vpu@50050000; // delete vpu
+	info {
+		file-name = "bm1684_se6_ctrl.dtb";
+	};
 };
 
 /delete-node/ &ion_for_npu; // delete npu
