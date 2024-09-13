@@ -6,7 +6,7 @@
 	/delete-node/ pka@58008000;
 	/delete-node/ clp890@50018000;
 	info {
-		file-name = "bm1684x_airbox.dtb";
+		file-name = "bm1684x_sm7_airbox.dtb";
 	};
 };
 

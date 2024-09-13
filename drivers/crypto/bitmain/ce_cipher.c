@@ -337,7 +337,7 @@ static int init(struct crypto_tfm *tfm)
 		.cra_name = #xmode"("#xcipher")",			\
 		.cra_driver_name = #xmode"("#xcipher")-bitmain-ce",	\
 		.cra_priority = CRA_PRIORITY,				\
-		.cra_flags = CRYPTO_ALG_TYPE_ABLKCIPHER,		\
+		.cra_flags = CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,		\
 		.cra_blocksize = xcipher##_BLOCKLEN,			\
 		.cra_ctxsize = sizeof(struct ce_cipher_ctx),			\
 		.cra_type = &crypto_ablkcipher_type,			\
@@ -366,7 +366,7 @@ static int init(struct crypto_tfm *tfm)
 		.cra_driver_name =					\
 			#xmode"("#xcipher"-secure-key)-bitmain-ce",	\
 		.cra_priority = CRA_PRIORITY,				\
-		.cra_flags = CRYPTO_ALG_TYPE_ABLKCIPHER,		\
+		.cra_flags = CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,		\
 		.cra_blocksize = xcipher##_BLOCKLEN,			\
 		.cra_ctxsize = sizeof(struct ce_cipher_ctx),			\
 		.cra_type = &crypto_ablkcipher_type,			\
