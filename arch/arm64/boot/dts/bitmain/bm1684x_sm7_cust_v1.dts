@@ -1,0 +1,110 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684x_evb.dtsi"
+
+#include <dt-bindings/input/input.h>
+
+/ {
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+	info {
+		file-name = "bm1684x_sm7_cust_v1.dtb";
+	};
+};
+
+&i2c1 {
+	/delete-node/ rtc@68;
+
+	port6416: tca6416@6c {
+		compatible = "ti,tca6416";
+		reg = <0x6c>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+
+	bm16xx-virtual-kaypad@6d {
+		compatible = "bitmain,bm16xx-virtual-keypad";
+		reg = <0x6d>;
+		keypad,num-rows = <1>;
+		keypad,num-columns = <8>;
+		linux,keymap =
+			<
+			MATRIX_KEY(0x00, 0x00, KEY_POWER)
+			MATRIX_KEY(0x00, 0x01, KEY_RESTART)
+			MATRIX_KEY(0x00, 0x02, KEY_FN_F1)
+			MATRIX_KEY(0x00, 0x03, BTN_3)
+			MATRIX_KEY(0x00, 0x04, BTN_4)
+			MATRIX_KEY(0x00, 0x05, BTN_5)
+			MATRIX_KEY(0x00, 0x06, BTN_6)
+			MATRIX_KEY(0x00, 0x07, BTN_7)
+			>;
+	};
+};
+
+&i2c2 {
+	rtc@68 {
+		compatible = "dallas,ds1307";
+		reg = <0x68>;
+	};
+};
+
+/ {
+	gpioleds: gpio-leds {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		run_led {
+			label = "RUN_STATUS";
+			gpios = <&port6416 3 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		sata_led {
+			label = "SATA_STATUS";
+			gpios = <&port6416 8 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+};
+
+&ethernet0 {
+	phy-handle = <&phy0>;
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy0: phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			reg = <0x0>;
+
+			rx-internal-delay-ps = <1050>;
+			motorcomm,rx-clk-drv-microamp = <3970>;
+			motorcomm,rx-data-drv-microamp = <3970>;
+			led0_config = <0x0078>;
+			led1_config = <0x2600>;
+			led2_config = <0x0>;
+		};
+	};
+};
+
+&ethernet1 {
+	phy-handle = <&phy1>;
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy1: phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			reg = <0x0>;
+
+			rx-internal-delay-ps = <1050>;
+			motorcomm,rx-clk-drv-microamp = <3970>;
+			motorcomm,rx-data-drv-microamp = <3970>;
+			led0_config = <0x0078>;
+			led1_config = <0x2600>;
+			led2_config = <0x0>;
+		};
+	};
+};
