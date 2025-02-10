@@ -660,7 +660,7 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 	} else if (id == SPI_ID_N25Q128 || id == SPI_ID_GD25LQ128 ||
 			id == SPI_ID_GD25LB512ME || id == SPI_ID_XM25QU128C ||
 			id == SPI_ID_W25Q128FW) {
-		sector_size = 64 * 1024; /* each block size = 64KB */
+		sector_size = 64 * 1024;
 	} else {
 		ERROR("unrecognized flash ID 0x%x\n", id);
 		return -EINVAL;

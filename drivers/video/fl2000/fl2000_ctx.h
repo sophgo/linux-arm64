@@ -227,6 +227,7 @@ struct dev_ctx {
 	uint32_t			card_name;
 
 	bool				hdmi_chip_found;
+	uint8_t				hdmi_chip_type;
 	bool				hdmi_running_in_dvi_mode;
 	bool				hdmi_powered_up;
 	uint32_t			hdmi_audio_use_spdif;

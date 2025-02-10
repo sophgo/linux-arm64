@@ -772,12 +772,20 @@ fl2000_hdmi_enable_video_output(struct dev_ctx * dev_ctx)
                 dev_ctx->vr_params.v_total_time *
                 dev_ctx->vr_params.freq;
 
-        if( pixelClock > 80000000L)
-                level = HDMI_ITE_PCLK_HIGH;
-        else if (pixelClock > 20000000L)
-                level = HDMI_ITE_PCLK_MEDIUM;
-        else
-                level = HDMI_ITE_PCLK_LOW;
+        if(dev_ctx->hdmi_chip_type == HDMI_CHIP_TYPE_IT66121) {
+                if( pixelClock > 80000000L)
+                        level = HDMI_ITE_PCLK_HIGH;
+                else
+                        level = HDMI_ITE_PCLK_LOW;
+        }
+        else { /* HDMI_CHIP_TYPE_IT66122 */
+                if( pixelClock > 180000000L)
+                        level = HDMI_ITE_PCLK_HIGH;
+                else if (pixelClock > 80000000L)
+                        level = HDMI_ITE_PCLK_MEDIUM;
+                else
+                        level = HDMI_ITE_PCLK_LOW;
+        }
 
         byte_data = (HDMI_ITE_B_HDMI_VID_RST | HDMI_ITE_B_TX_HDCP_RST_HDMITX);
         fl2000_hdmi_write_byte_simple(dev_ctx, HDMI_ITE_REG_TX_SW_RST,
@@ -851,6 +859,7 @@ fl2000_hdmi_setup_afe(struct dev_ctx * dev_ctx, uint8_t Level)
 
         switch (Level) {
         case HDMI_ITE_PCLK_HIGH:
+        case HDMI_ITE_PCLK_MEDIUM:
                 fl2000_write_byte_simple_with_mask(dev_ctx, 0x62, 0x90, 0x80, &is_good);
                 if (!is_good)
                         goto exit;
@@ -977,9 +986,20 @@ fl2000_hdmi_find_chip(struct dev_ctx * dev_ctx)
                 const uint32_t venderID = (data & 0xFFFF);
                 const uint32_t deviceID = (data >> 16 & 0xFFF);
 
-                if (venderID == HDMI_ITE_VENDER_ID &&
-			(deviceID == HDMI_ITE_DEVICE_ID || deviceID == HDMI_ITE_DEVICE_ID_122))
-                        found_hdmi = true;
+                if (venderID == HDMI_ITE_VENDER_ID) {
+                        switch (deviceID) {
+                                case HDMI_ITE_DEVICE_ID_121:
+                                        found_hdmi = true;
+                                        dev_ctx->hdmi_chip_type = HDMI_CHIP_TYPE_IT66121;
+                                        break;
+                                case HDMI_ITE_DEVICE_ID_122:
+                                        found_hdmi = true;
+                                        dev_ctx->hdmi_chip_type = HDMI_CHIP_TYPE_IT66122;
+                                        break;
+                                default: break;
+                        }
+                }
+                dbg_msg(TRACE_LEVEL_INFO, DBG_PNP, "get venderID:0x%X deviceID:0x%X type:%d, found_hdmi:%d", venderID, deviceID, dev_ctx->hdmi_chip_type, found_hdmi);
         }
 
         return found_hdmi;
@@ -990,7 +1010,7 @@ fl2000_hdmi_power_up(struct dev_ctx * dev_ctx)
 {
         bool is_good = true;
         int index;
-        const HDMI_REGISTER_SET_ENTRY table[] =
+        const HDMI_REGISTER_SET_ENTRY table_itl_121[] =
         {
                 {0x0F, 0x78, 0x38},   // PwrOn GRCLK
                 {0x05, 0x01, 0x00},   // PwrOn PCLK
@@ -1013,6 +1033,35 @@ fl2000_hdmi_power_up(struct dev_ctx * dev_ctx)
 
                 {0x0F, 0x78, 0x08},   // PwrOn IACLK
         };
+        const HDMI_REGISTER_SET_ENTRY table_itl_122[] =
+        {
+                {0x0F, 0x78, 0x38},   // PwrOn GRCLK
+                {0x05, 0x01, 0x00},   // PwrOn PCLK
+
+                // PLL PwrOn
+                //
+                {0x61, 0x20, 0x00},   // PwrOn DRV
+                {0x62, 0x44, 0x00},   // PwrOn XPLL
+                {0x64, 0x40, 0x00},   // PwrOn IPLL
+
+                // PLL Reset OFF
+                //
+                {0x61, 0x10, 0x10},   // DRV_RST
+                {0x62, 0x08, 0x08},   // XP_RESETB
+                {0x64, 0x04, 0x04},   // IP_RESETB
+
+                {0x6A, 0xFF, 0x70},   // 0x30 0x70
+                {0x66, 0xFF, 0x1F},   // 0x00 0x1F
+                {0x63, 0xFF, 0x38},   // 0x18 0x38
+
+                {0x0F, 0x78, 0x08},   // PwrOn IACLK
+        };
+
+        const HDMI_REGISTER_SET_ENTRY *table;
+        if(dev_ctx->hdmi_chip_type == HDMI_CHIP_TYPE_IT66121)
+                table = table_itl_121;
+        else /* HDMI_CHIP_TYPE_IT66122 */
+                table = table_itl_122;
 
         for(index = 0; index < 12; index++) {
                 if (table[index].InvAndMask == 0 &&
