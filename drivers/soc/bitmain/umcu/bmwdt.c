@@ -325,6 +325,8 @@ static ssize_t bmwdt_write(struct file *file, const char __user *data,
 		return -EFAULT;
 
 	cmd[len] = 0;
+	if (cmd[0] == 'V')
+		strcpy(cmd, "disabled");
 
 	err = bmwdt_run_cmd(dev, cmd);
 

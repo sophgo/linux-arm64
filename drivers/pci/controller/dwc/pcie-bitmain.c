@@ -44,7 +44,7 @@
 #define RC_PRST_X_IN_BIT      23
 #define EP_PRST_X_IN_BIT      22
 #define to_bm168x_pcie(x)     dev_get_drvdata((x)->dev)
-// #define NETWORK_TOP_IRQ
+#define NETWORK_TOP_IRQ
 
 struct bm168x_pcie {
 	struct dw_pcie *pci; /* DT dbi is pci.dbi_base */
@@ -127,7 +127,7 @@ static int bm168x_pcie_establish_link(struct bm168x_pcie *bm168x_pcie)
 	return dw_pcie_wait_for_link(pci);
 }
 
-#if 1
+#if 0
 static irqreturn_t bm168x_pcie_irq_handler(int irq, void *arg)
 {
 	struct bm168x_pcie *bm168x_pcie = arg;
@@ -281,7 +281,7 @@ static int bm168x_pcie_add_pcie_port(struct bm168x_pcie *bm168x_pcie,
 	struct device *dev = pci->dev;
 	int ret;
 
-	// if (device_property_read_bool(&pdev->dev, "pcie_irq_enable")) {
+	if (device_property_read_bool(&pdev->dev, "pcie_irq_enable")) {
 		if (IS_ENABLED(CONFIG_PCI_MSI)) {
 			pp->msi_irq = platform_get_irq_byname(pdev, "msi");
 			if (pp->msi_irq <= 0) {
@@ -292,7 +292,7 @@ static int bm168x_pcie_add_pcie_port(struct bm168x_pcie *bm168x_pcie,
 			 * now we have irq_set_chained_handler_and_data in dw_pcie_host_init,
 			 * no need to request irq here.
 			 */
-			#if 1
+			#if 0
 			ret = devm_request_irq(dev, pp->msi_irq,
 					bm168x_pcie_irq_handler,
 					IRQF_SHARED | IRQF_NO_THREAD,
@@ -303,10 +303,10 @@ static int bm168x_pcie_add_pcie_port(struct bm168x_pcie *bm168x_pcie,
 			}
 			#endif
 		}
-	// } else {
-	// 	pr_info("%s %d: should not run in\n", __func__, __LINE__);
-	// 	// bm168x_pcie_host_ops.msi_host_init = bm168x_msi_host_init;
-	// }
+	} else {
+		bm168x_pcie_host_ops.msi_host_init = bm168x_msi_host_init;
+	}
+
 
 	pp->root_bus_nr = -1;
 	pp->ops = &bm168x_pcie_host_ops;

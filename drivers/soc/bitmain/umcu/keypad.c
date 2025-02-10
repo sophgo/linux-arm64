@@ -37,9 +37,11 @@ static void work_handler(struct work_struct *work)
 	int i, j, err, key;
 	unsigned int code;
 	unsigned short *keycode_map = ctx->input->keycode;
+	unsigned int key_num = ALIGN(ctx->keys, 8) > SUPPORT_KEYS_MAX ?
+		SUPPORT_KEYS_MAX : ALIGN(ctx->keys, 8);
 
 	/* LSB and LSb */
-	for (i = 0; i < SUPPORT_KEYS_MAX; i += 8) {
+	for (i = 0; i < key_num; i += 8) {
 		err = i2c_smbus_read_byte_data(ctx->i2c, i / 8);
 		if (err < 0)
 			break;

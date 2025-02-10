@@ -8,6 +8,9 @@
 #ifndef _FL2000_HDMI_H_
 #define _FL2000_HDMI_H_
 
+#define HDMI_CHIP_TYPE_IT66121 ( 0 )
+#define HDMI_CHIP_TYPE_IT66122 ( 1 )
+
 #define HDMI_ITE_AUDIO_SAMPLE_FREQUENCY         ( HDMI_ITE_AUDFS_44p1KHZ )
 #define HDMI_ITE_AUDIO_SAMPLE_FREQUENCY_HZ      ( 44100L )
 #define HDMI_ITE_AUDIO_NUMBER_OF_CHANNEL        ( 2 )
@@ -15,8 +18,8 @@
 #define HDMI_ITE_AUDIO_NUMBER_OF_BITS           ( 16 )
 
 #define HDMI_ITE_VENDER_ID                      ( 0x4954 )
-#define HDMI_ITE_DEVICE_ID                      ( 0x612 )
-#define HDMI_ITE_DEVICE_ID_122                  0x622
+#define HDMI_ITE_DEVICE_ID_121                  ( 0x612 )
+#define HDMI_ITE_DEVICE_ID_122                  ( 0x622 )
 
 #define HDMI_ITE_EACH_TIME_READ_EDID_MAX_SIZE   ( 0x20 )
 

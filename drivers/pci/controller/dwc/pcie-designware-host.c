@@ -452,10 +452,9 @@ int dw_pcie_host_init(struct pcie_port *pp)
 				return ret;
 
 			if (pp->msi_irq)
-				// irq_set_chained_handler_and_data(pp->msi_irq,
-				// 			    dw_chained_msi_isr,
-				// 			    pp);
-
+				irq_set_chained_handler_and_data(pp->msi_irq,
+							    dw_chained_msi_isr,
+							    pp);
 		} else {
 			ret = pp->ops->msi_host_init(pp);
 			if (ret < 0)
