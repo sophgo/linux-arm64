@@ -65,6 +65,9 @@ EXPORT_SYMBOL(__stack_chk_guard);
  */
 void (*pm_power_off)(void);
 EXPORT_SYMBOL_GPL(pm_power_off);
+/* pm_power_off2 takes priority over pm_power_off */
+void (*pm_power_off2)(void);
+EXPORT_SYMBOL_GPL(pm_power_off2);
 
 void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
 
@@ -170,6 +173,8 @@ void machine_power_off(void)
 {
 	local_irq_disable();
 	smp_send_stop();
+	if (pm_power_off2)
+		pm_power_off = pm_power_off2;
 	if (pm_power_off)
 		pm_power_off();
 }
