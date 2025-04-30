@@ -19,7 +19,7 @@
 
 &ion_for_vpu {
 			compatible = "vpu-region";
-			reg = <0x3 0x48000000 0x0 0xb8000000>; // 3G
+			reg = <0x3 0x48000000 0x0 0xb7f00000>; // 3G - 1M
 };
 
 &ion_for_npu {

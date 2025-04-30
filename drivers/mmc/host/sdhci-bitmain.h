@@ -22,6 +22,8 @@
 #include <linux/delay.h>
 #include <linux/mmc/mmc.h>
 #include <linux/slab.h>
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
 
 /*register macro */
 #define P_VENDOR_SPECIFIC_AREA		0xE8
@@ -114,6 +116,7 @@ struct sdhci_bm_host {
 	struct reset_control *clk_rst_axi_emmc_ctrl;
 	struct reset_control *clk_rst_emmc_ctrl;
 	struct reset_control *clk_rst_100k_emmc_ctrl;
+	int pwr_gpio;
 };
 
 int bm_sdhci_phy_init(struct sdhci_host *host);

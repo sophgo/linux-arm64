@@ -239,6 +239,10 @@
  */
 #define YTPHY_WCR_TYPE_PULSE BIT(0)
 
+#define YTPHY_LED0_CONFIG_REG 0xA00C
+#define YTPHY_LED1_CONFIG_REG 0xA00D
+#define YTPHY_LED2_CONFIG_REG 0xA00E
+
 #define YTPHY_PAD_DRIVE_STRENGTH_REG 0xA010
 #define YT8531_RGMII_RXC_DS_MASK GENMASK(15, 13)
 #define YT8531_RGMII_RXD_DS_HI_MASK BIT(12) /* Bit 2 of rxd_ds */
@@ -712,6 +716,25 @@ static int ytphy_rgmii_clk_delay_config_with_lock(struct phy_device *phydev)
 	return ret;
 }
 
+static void ytphy_led_config(struct phy_device *phydev)
+{
+	struct device_node *node = phydev->mdio.dev.of_node;
+	int led0_config, led1_config, led2_config;
+
+	if (of_property_read_u32(node, "led0_config", &led0_config))
+		led0_config = 0;
+
+	if (of_property_read_u32(node, "led1_config", &led1_config))
+		led1_config = 0;
+
+	if (of_property_read_u32(node, "led2_config", &led2_config))
+		led2_config = 0;
+
+	ytphy_write_ext_with_lock(phydev, YTPHY_LED0_CONFIG_REG, led0_config);
+	ytphy_write_ext_with_lock(phydev, YTPHY_LED1_CONFIG_REG, led1_config);
+	ytphy_write_ext_with_lock(phydev, YTPHY_LED2_CONFIG_REG, led2_config);
+}
+
 /**
  * struct ytphy_ldo_vol_map - map a current value to a register value
  * @vol: ldo voltage
@@ -889,13 +912,7 @@ static int yt8531_config_init(struct phy_device *phydev)
 	if (ret < 0)
 		return ret;
 
-	if (strcmp(phydev->attached_dev->name, "eth0") == 0) {
-		ytphy_write_ext_with_lock(phydev, 0xa003, 0x14fd);
-	} else if (strcmp(phydev->attached_dev->name, "eth1") == 0) {
-		ytphy_write_ext_with_lock(phydev, 0xa003, 0x20fd);
-	}
-	ytphy_write_ext_with_lock(phydev, 0xa00c, 0x7);
-	ytphy_write_ext_with_lock(phydev, 0xa00d, 0x19f0);
+	ytphy_led_config(phydev);
 
 	return 0;
 }

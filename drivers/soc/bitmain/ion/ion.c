@@ -43,6 +43,18 @@
 
 #include "ion.h"
 
+/**
+ * plist_for_each_entry_reverse - iterate over list of given type in reverse order
+ * @pos:	the type * to use as a loop counter
+ * @head:	the head for your list
+ * @mem:	the name of the list_head within the struct
+ *
+ * Iterate over list of given type in reverse order, from the last entry to the
+ * first.
+ */
+#define plist_for_each_entry_reverse(pos, head, mem)	\
+	 list_for_each_entry_reverse(pos, &(head)->node_list, mem.node_list)
+
 static struct ion_device *internal_dev;
 static int heap_id;
 
@@ -487,7 +499,7 @@ int ion_alloc(size_t len, unsigned int heap_id_mask, unsigned int flags, struct 
 	}
 
 	down_read(&dev->lock);
-	plist_for_each_entry(heap, &dev->heaps, node) {
+	plist_for_each_entry_reverse(heap, &dev->heaps, node) {
 		/* if the caller didn't specify this heap id */
 		if (!((1 << heap->id) & heap_id_mask))
 			continue;

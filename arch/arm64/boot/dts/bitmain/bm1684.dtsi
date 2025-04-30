@@ -778,6 +778,7 @@
 			"clk_gate_sd",
 			"clk_gate_axi_sd",
 			"clk_gate_100k_sd";
+		pwr-gpio = <&port1a 10 GPIO_ACTIVE_HIGH>;
 	};
 
 	bce: bce@58004000 {

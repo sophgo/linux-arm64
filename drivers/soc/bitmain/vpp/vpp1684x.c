@@ -24,6 +24,10 @@
 #include "vpp1684x.h"
 #include "vpp_platform.h"
 
+#include <linux/mutex.h>
+#include <linux/rwlock.h>
+#include <linux/rwsem.h>
+
 #define VPP_OK                             (0)
 #define VPP_ERR                            (-1)
 #define VPP_ERR_COPY_FROM_USER             (-2)
@@ -36,6 +40,9 @@
 #define VPP_ENOMEM                         (-12)
 #define VPP_ERR_IDLE_BIT_MAP               (-256)
 #define VPP_ERESTARTSYS                    (-512)
+
+DECLARE_RWSEM(my_rwlock);
+EXPORT_SYMBOL(my_rwlock);
 
 static u64 ion_region[2] = {0, 0};
 static u64 npu_reserved[2] = {0, 0};
@@ -602,6 +609,7 @@ static int bm1684x_vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *b
 		return ret;
 	}
 
+	down_read(&my_rwlock);
 	ret = vpp_setup_desc(core_id, vdev, batch, des_paddr[core_id]);
 	if (ret < 0) {
 		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
@@ -615,6 +623,7 @@ static int bm1684x_vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *b
 		ret1 = wait_event_timeout(wq_vpp1, got_event_vpp[core_id], HZ);
 	atomic_dec(&s_vpp_usage_info.vpp_busy_status[core_id]);
 
+	up_read(&my_rwlock);
 	if (ret1 == 0) {
 		pr_err("vpp wait_event_timeout! ret %d, core_id %d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
 			ret1, core_id, current->pid, current->tgid, vpp_idle_bit_map);

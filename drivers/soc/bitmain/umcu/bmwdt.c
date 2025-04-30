@@ -325,6 +325,8 @@ static ssize_t bmwdt_write(struct file *file, const char __user *data,
 		return -EFAULT;
 
 	cmd[len] = 0;
+	if (cmd[0] == 'V')
+		strcpy(cmd, "disabled");
 
 	err = bmwdt_run_cmd(dev, cmd);
 
@@ -362,6 +364,102 @@ static int bmwdt_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
+static long bmwdt_ioctl(struct file *file, unsigned int cmd,
+							unsigned long arg)
+{
+	void __user *argp = (void __user *)arg;
+	int __user *p = argp;
+	unsigned int val;
+	char wdt_cmd[128];
+	struct bmwdt_dev *dev = file->private_data;
+	int err;
+
+	BMWDT_ENTER();
+
+	switch (cmd) {
+	// case WDIOC_GETSUPPORT:
+	//	err = copy_to_user(argp, wdd->info,
+	//		sizeof(struct watchdog_info)) ? -EFAULT : 0;
+	//	break;
+	// case WDIOC_GETSTATUS:
+	//	val = watchdog_get_status(wdd);
+	//	err = put_user(val, p);
+	//	break;
+	// case WDIOC_GETBOOTSTATUS:
+	//	err = put_user(wdd->bootstatus, p);
+	//	break;
+	case WDIOC_SETOPTIONS:
+		if (get_user(val, p)) {
+			err = -EFAULT;
+			break;
+		}
+		if (val & WDIOS_DISABLECARD) {
+			strcpy(wdt_cmd, "disabled");
+			err = bmwdt_run_cmd(dev, wdt_cmd);
+			if (err < 0)
+				break;
+		}
+		if (val & WDIOS_ENABLECARD) {
+			strcpy(wdt_cmd, "enable");
+			err = bmwdt_run_cmd(dev, wdt_cmd);
+		}
+		break;
+	case WDIOC_KEEPALIVE:
+		strcpy(wdt_cmd, "kick");
+		err = bmwdt_run_cmd(dev, wdt_cmd);
+		break;
+	case WDIOC_SETTIMEOUT:
+		if (get_user(val, p)) {
+			err = -EFAULT;
+			break;
+		}
+		sprintf(wdt_cmd, "%s%d", "timeout", *p);
+		err = bmwdt_run_cmd(dev, wdt_cmd);
+		if (err < 0)
+			break;
+		/* If the watchdog is active then we send a keepalive ping
+		 * to make sure that the watchdog keep's running (and if
+		 * possible that it takes the new timeout)
+		 */
+
+		strcpy(wdt_cmd, "kick");
+		err = bmwdt_run_cmd(dev, wdt_cmd);
+		if (err < 0)
+			break;
+		/* fall through */
+	case WDIOC_GETTIMEOUT:
+		val = atomic_read(&dev->timeout);
+		/* timeout == 0 means that we don't know the timeout */
+		if (val == 0) {
+			err = -EOPNOTSUPP;
+			break;
+		}
+		err = put_user(val, p);
+		break;
+	// case WDIOC_GETTIMELEFT:
+	//	err = watchdog_get_timeleft(wdd, &val);
+	//	if (err < 0)
+	//		break;
+	//	err = put_user(val, p);
+	//	break;
+	// case WDIOC_SETPRETIMEOUT:
+	//	if (get_user(val, p)) {
+	//		err = -EFAULT;
+	//		break;
+	//	}
+	//	err = watchdog_set_pretimeout(wdd, val);
+	//	break;
+	// case WDIOC_GETPRETIMEOUT:
+	//	err = put_user(wdd->pretimeout, p);
+	//	break;
+	default:
+		err = -ENOTTY;
+		break;
+	}
+
+	return err;
+}
+
 static int bmwdt_release(struct inode *inode, struct file *file)
 {
 	BMWDT_ENTER();
@@ -373,6 +471,7 @@ static const struct file_operations bmwdt_fops = {
 	.write		= bmwdt_write,
 	.read		= bmwdt_read,
 	.open		= bmwdt_open,
+	.unlocked_ioctl		= bmwdt_ioctl,
 	.release	= bmwdt_release,
 };
 

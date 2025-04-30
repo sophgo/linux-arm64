@@ -7,7 +7,18 @@
 		file-name = "bm1684x_se7_v2.0.dtb";
 	};
 	/delete-node/ pka@58008000;
-	/delete-node/ bm1684_cooling;
+	/delete-node/ clp890@50018000;
+	gpio-leds {
+		/delete-node/ gpio5;
+	};
+	gpio-keys {
+		/delete-node/ gpio7;
+	};
+};
+
+&tmp451 {
+	gain = "1";
+	offset = "-5000";
 };
 
 &thermal_zones {
@@ -24,7 +35,7 @@
 };
 
 &soc_crit_trip {
-	temperature = <110000>;
+	temperature = <105000>;
 };
 
 &clock_init {
@@ -51,4 +62,40 @@
 		<1000000001>,
 		<800000000>, <800000001>,
 		<2300000001>, <575000000>;
+};
+
+&ethernet0 {
+	phy-handle = <&phy0>;
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy0: phy@0 {
+			rx-internal-delay-ps = <750>;
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			led0_config = <0x7>;
+			led1_config = <0x19f0>;
+			led2_config = <0x0>;
+			reg = <0x0>;
+		};
+	};
+};
+
+&ethernet1 {
+	phy-handle = <&phy1>;
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy1: phy@1 {
+			rx-internal-delay-ps = <1200>;
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			led0_config = <0x7>;
+			led1_config = <0x19f0>;
+			led2_config = <0x0>;
+			reg = <0x0>;
+		};
+	};
 };

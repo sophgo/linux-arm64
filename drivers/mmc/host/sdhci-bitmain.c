@@ -512,6 +512,7 @@ static int sdhci_bm_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 	const struct sdhci_pltfm_data *pdata;
 	int ret;
+	int gpio_num = 0;
 
 	pr_info(DRIVER_NAME ":%s\n", __func__);
 
@@ -536,6 +537,15 @@ static int sdhci_bm_probe(struct platform_device *pdev)
 		goto pltfm_free;
 
 	sdhci_get_of_property(pdev);
+
+	if (pdev->dev.of_node) {
+		gpio_num = of_get_named_gpio(pdev->dev.of_node, "pwr-gpio", 0);
+		if (gpio_is_valid(gpio_num)) {
+			bm_host->pwr_gpio = gpio_num;
+			if (gpio_request_one(gpio_num, GPIOF_OUT_INIT_LOW, "pwr_gpio"))
+				pr_info("Failed to request GPIO: %d\n", ret);
+		}
+	}
 
 	if (host->mmc->caps2 & MMC_CAP2_NO_SD) {
 		bm_host->reset = devm_reset_control_get(&pdev->dev, "emmc");
@@ -600,10 +610,13 @@ pltfm_free:
 static int sdhci_bm_remove(struct platform_device *pdev)
 {
 	struct sdhci_host *host = platform_get_drvdata(pdev);
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_bm_host *bm_host = sdhci_pltfm_priv(pltfm_host);
 	int dead = (readl_relaxed(host->ioaddr + SDHCI_INT_STATUS) == 0xffffffff);
 
 	sdhci_remove_host(host, dead);
 	sdhci_pltfm_free(pdev);
+	gpio_free(bm_host->pwr_gpio);
 	return 0;
 }
 
