@@ -8,7 +8,7 @@
 	/delete-node/ pka@58008000;
 	/delete-node/ clp890@50018000;
 	info {
-		file-name = "bm1684x_sm7_cust_v1.dtb";
+		file-name = "bm1684x_sm7_cust_v2.dtb";
 	};
 };
 
@@ -63,48 +63,6 @@
 			label = "SATA_STATUS";
 			gpios = <&port6416 8 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
-		};
-	};
-};
-
-&ethernet0 {
-	phy-handle = <&phy0>;
-	mdio {
-		#address-cells = <0x1>;
-		#size-cells = <0x0>;
-		compatible = "snps,dwmac-mdio";
-		phy0: phy@0 {
-			compatible = "ethernet-phy-ieee802.3-c22";
-			device_type = "ethernet-phy";
-			reg = <0x0>;
-
-			rx-internal-delay-ps = <1050>;
-			motorcomm,rx-clk-drv-microamp = <3970>;
-			motorcomm,rx-data-drv-microamp = <3970>;
-			led0_config = <0x0078>;
-			led1_config = <0x2600>;
-			led2_config = <0x0>;
-		};
-	};
-};
-
-&ethernet1 {
-	phy-handle = <&phy1>;
-	mdio {
-		#address-cells = <0x1>;
-		#size-cells = <0x0>;
-		compatible = "snps,dwmac-mdio";
-		phy1: phy@0 {
-			compatible = "ethernet-phy-ieee802.3-c22";
-			device_type = "ethernet-phy";
-			reg = <0x0>;
-
-			rx-internal-delay-ps = <1050>;
-			motorcomm,rx-clk-drv-microamp = <3970>;
-			motorcomm,rx-data-drv-microamp = <3970>;
-			led0_config = <0x0078>;
-			led1_config = <0x2600>;
-			led2_config = <0x0>;
 		};
 	};
 };

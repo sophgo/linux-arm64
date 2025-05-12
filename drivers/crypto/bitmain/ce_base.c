@@ -2,6 +2,11 @@
 #include <ce.h>
 #include <ce_inst.h>
 
+#include <linux/rwlock.h>
+#include <linux/rwsem.h>
+#include <linux/mutex.h>
+#include <../../soc/bitmain/vpp/vpp_platform.h>
+
 #define CE_BASE_TFM_MAX		24
 
 struct ce_base_device;
@@ -157,6 +162,8 @@ static int ce_base_ioc_func_op_phy(struct ce_base_device *ce_base_dev,
 	ce_base_op->len = ce_base_ioc_op_phy.len;
 	ce_base_op->dstlen = ce_base_ioc_op_phy.dstlen;
 
+	down_write(&my_rwlock);
+
 	err = ce_inst_enqueue_request(inst, creq);
 	if (err != -EINPROGRESS) {
 		/* success insert request to queue */
@@ -168,6 +175,8 @@ static int ce_base_ioc_func_op_phy(struct ce_base_device *ce_base_dev,
 	wait_for_completion(&ce_base_tfm->comp);
 	/* we never use this completion again, just init it every transaction */
 	/* reinit_completion(&ce_base_tfm->comp); */
+
+	up_write(&my_rwlock);
 
 	err = ce_base_tfm->err;
 err0:

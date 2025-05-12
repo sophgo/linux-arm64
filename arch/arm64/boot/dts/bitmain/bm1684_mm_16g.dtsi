@@ -61,7 +61,8 @@
 
 		ion_for_vpu: ion_vpu_mem {
 			compatible = "vpu-region";
-			reg = <0x3 0x80000000 0x0 0x80000000>; // 2G, for VPU
+			/* need to reserve 1M of high address space */
+			reg = <0x3 0x80000000 0x0 0x7ff00000>; // 2G - 1M, for VPU
 		};
 
 		ion_for_vpp: ion_vpp_mem {

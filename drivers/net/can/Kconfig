@@ -48,6 +48,14 @@ config CAN_SLCAN
 	  can be changed by the 'maxdev=xx' module option. This driver can
 	  also be built as a module. If so, the module will be called slcan.
 
+config CAN_CSM330A
+       tristate "ZLG CSM330A Serial seriak CAN device"
+       depends on TTY && SERIAL_DEV_CTRL_TTYPORT && SERIAL_DEV_BUS
+       ---help---
+       Support for ZLG Serial to CAN interfaces.
+       This is a CAN device driver which registers as an serial adapter
+       and gpiochip to expose these functions of the CSM330A.
+
 config CAN_DEV
 	tristate "Platform CAN drivers with Netlink support"
 	default y

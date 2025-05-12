@@ -1,6 +1,7 @@
 extern unsigned int sophon_get_chip_id(void);
 extern struct platform_driver bm_vpp_driver;
 extern struct platform_driver bm1684x_vpp_driver;
+extern struct rw_semaphore my_rwlock;
 #define VPP_CORE_MAX  2
 #define MAX_VPP_STAT_WIN_SIZE  100
 struct vpp_statistic_info {

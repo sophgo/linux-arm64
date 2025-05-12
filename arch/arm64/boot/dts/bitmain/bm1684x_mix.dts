@@ -71,7 +71,7 @@
 };
 
 &ion_for_vpu {
-	reg = <0x2 0x08000000 0x0 0xF8000000>; // 3.875G, for VPU
+	reg = <0x2 0x08000000 0x0 0xF7F00000>; // 3.875G - 1M, for VPU
 };
 
 &ion_for_vpp {

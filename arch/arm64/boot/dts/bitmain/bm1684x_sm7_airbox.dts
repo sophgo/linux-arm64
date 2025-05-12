@@ -17,7 +17,7 @@
 
 &ion_for_vpp {
 	compatible = "vpp-region";
-	reg = <0x4 0x1194d800 0x0 0xee6b2800>; // 3.725G
+	reg = <0x4 0x12000000 0x0 0xee000000>; // 3.7815G
 };
 
 &ion_for_vpu {

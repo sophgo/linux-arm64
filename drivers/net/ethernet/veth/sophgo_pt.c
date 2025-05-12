@@ -34,6 +34,7 @@ u32 sg_eth_cdma_transfer(struct veth_dev *vdev, struct sg_cdma_arg *parg, bool l
 	lock_timeout = 3 * 1000;
 	/* Check the cdma is used by others(ARM9) or not.*/
 	while (sg_read32(vdev->top_misc_reg, TOP_CDMA_LOCK)) {
+		udelay(1);
 		if (--lock_timeout == 0) {
 			pr_err("veth cdma resource wait timeout\n");
 			if (lock_cdma)
@@ -91,6 +92,7 @@ u32 sg_eth_cdma_transfer(struct veth_dev *vdev, struct sg_cdma_arg *parg, bool l
 	value = (1 << SOPHGO_CDMA_ENABLE_BIT) | (1 << SOPHGO_CDMA_INT_ENABLE_BIT);
 	sg_write32(vdev->cdma_cfg_reg, CDMA_CMD_ACCP0, value);
 	while (((sg_read32(vdev->cdma_cfg_reg, CDMA_INT_STATUS) >> 0x9) & 0x1) != 0x1) {
+		udelay(1);
 		if (--count == 0) {
 			pr_err("veth cdma polling wait timeout\n");
 			sg_write32(vdev->top_misc_reg, TOP_CDMA_LOCK, 0);
@@ -339,7 +341,7 @@ int pt_send(struct pt *pt, void *data, int len)
 int pt_pkg_len(struct pt *pt)
 {
 	struct local_queue *q = &pt->rx.lq;
-	u32 pkg_len;
+	int pkg_len;
 
 	if (q->head == q->tail)
 		return -ENOMEM;
@@ -348,7 +350,11 @@ int pt_pkg_len(struct pt *pt)
 	// pkg_len = (u32 *)((u8 *)q->cpu + q->tail);
 	// WARN((unsigned long)pkg_len & (sizeof(pkg_len) - 1), "rx queue not aligned correctly\n");
 
-	WARN(((pkg_len < 0) || (pkg_len > 0x1000d)), "pkg_len: %d error\n", pkg_len);
+	// WARN(((pkg_len < 0) || (pkg_len > 0x1000d)), "pkg_len: %d error\n", pkg_len);
+	if (pkg_len < 0 || pkg_len > 0x1000d) {
+		pr_err("pkg_len: %d error\n", pkg_len);
+		return -ENOMEM;
+	}
 	return pkg_len;
 }
 

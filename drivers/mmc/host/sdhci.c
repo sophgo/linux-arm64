@@ -30,8 +30,9 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/sdio.h>
 #include <linux/mmc/slot-gpio.h>
-
 #include "sdhci.h"
+#include "sdhci-bitmain.h"
+#include "sdhci-pltfm.h"
 
 #define DRIVER_NAME "sdhci"
 
@@ -1733,19 +1734,27 @@ static void sdhci_set_power_reg(struct sdhci_host *host, unsigned char mode,
 				unsigned short vdd)
 {
 	struct mmc_host *mmc = host->mmc;
-
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_bm_host *bm_host = sdhci_pltfm_priv(pltfm_host);
 	mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
 
-	if (mode != MMC_POWER_OFF)
+	if (mode != MMC_POWER_OFF) {
 		sdhci_writeb(host, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
-	else
+		if (bm_host->pwr_gpio)
+			gpio_set_value(bm_host->pwr_gpio, 1);
+	} else {
 		sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
+		if (bm_host->pwr_gpio)
+			gpio_set_value(bm_host->pwr_gpio, 0);
+	}
 }
 
 void sdhci_set_power_noreg(struct sdhci_host *host, unsigned char mode,
 			   unsigned short vdd)
 {
 	u8 pwr = 0;
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_bm_host *bm_host = sdhci_pltfm_priv(pltfm_host);
 
 	if (mode != MMC_POWER_OFF) {
 		switch (1 << vdd) {
@@ -1787,6 +1796,9 @@ void sdhci_set_power_noreg(struct sdhci_host *host, unsigned char mode,
 
 	if (pwr == 0) {
 		sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
+		if (bm_host->pwr_gpio)
+			gpio_set_value(bm_host->pwr_gpio, 0);
+
 		if (host->quirks2 & SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON)
 			sdhci_runtime_pm_bus_off(host);
 	} else {
@@ -1794,9 +1806,11 @@ void sdhci_set_power_noreg(struct sdhci_host *host, unsigned char mode,
 		 * Spec says that we should clear the power reg before setting
 		 * a new value. Some controllers don't seem to like this though.
 		 */
-		if (!(host->quirks & SDHCI_QUIRK_SINGLE_POWER_WRITE))
+		if (!(host->quirks & SDHCI_QUIRK_SINGLE_POWER_WRITE)) {
 			sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
-
+			if (bm_host->pwr_gpio)
+				gpio_set_value(bm_host->pwr_gpio, 0);
+		}
 		/*
 		 * At least the Marvell CaFe chip gets confused if we set the
 		 * voltage and set turn on power at the same time, so set the
@@ -1808,6 +1822,8 @@ void sdhci_set_power_noreg(struct sdhci_host *host, unsigned char mode,
 		pwr |= SDHCI_POWER_ON;
 
 		sdhci_writeb(host, pwr, SDHCI_POWER_CONTROL);
+		if (bm_host->pwr_gpio)
+			gpio_set_value(bm_host->pwr_gpio, 1);
 
 		if (host->quirks2 & SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON)
 			sdhci_runtime_pm_bus_on(host);

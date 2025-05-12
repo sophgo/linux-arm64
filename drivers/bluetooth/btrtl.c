@@ -25,6 +25,10 @@
 #define RTL_ROM_LMP_8821A	0x8821
 #define RTL_ROM_LMP_8761A	0x8761
 #define RTL_ROM_LMP_8822B	0x8822
+#ifdef CONFIG_ARCH_BITMAIN
+#define RTL_ROM_LMP_8852A	0x8852
+#define RTL_ROM_LMP_8851B	0x8851
+#endif
 #define RTL_CONFIG_MAGIC	0x8723ab55
 
 #define IC_MATCH_FL_LMPSUBV	(1 << 0)
@@ -149,6 +153,25 @@ static const struct id_table ic_id_table[] = {
 	  .has_rom_version = true,
 	  .fw_name  = "rtl_bt/rtl8822b_fw.bin",
 	  .cfg_name = "rtl_bt/rtl8822b_config" },
+#ifdef CONFIG_ARCH_BITMAIN
+	/*
+	 * Since IC_INFO can only accept 2 parameters in current kernel version,
+	 * we can only adapt one type of RTL_ROM_LMP_8852A
+	 */
+	/* 8852B */
+	{ IC_INFO(RTL_ROM_LMP_8852A, 0xb),
+	  .config_needed = false,
+	  .has_rom_version = true,
+	  .fw_name  = "rtl_bt/rtl8852bu_fw.bin",
+	  .cfg_name = "rtl_bt/rtl8852bu_config"},
+
+	/* 8851B */
+	{ IC_INFO(RTL_ROM_LMP_8851B, 0xb),
+	  .config_needed = false,
+	  .has_rom_version = true,
+	  .fw_name  = "rtl_bt/rtl8851bu_fw.bin",
+	  .cfg_name = "rtl_bt/rtl8851bu_config"},
+#endif
 	};
 
 static const struct id_table *btrtl_match_ic(u16 lmp_subver, u16 hci_rev,
@@ -255,6 +278,10 @@ static int rtlbt_parse_firmware(struct hci_dev *hdev,
 		{ RTL_ROM_LMP_8723B, 9 },	/* 8723D */
 		{ RTL_ROM_LMP_8821A, 10 },	/* 8821C */
 		{ RTL_ROM_LMP_8822B, 13 },	/* 8822C */
+#ifdef CONFIG_ARCH_BITMAIN
+		{ RTL_ROM_LMP_8852A, 20 },	/* 8852B */
+		{ RTL_ROM_LMP_8851B, 36 },	/* 8851B */
+#endif
 	};
 
 	min_size = sizeof(struct rtl_epatch_header) + sizeof(extension_sig) + 3;
@@ -627,6 +654,35 @@ int btrtl_download_firmware(struct hci_dev *hdev,
 	 * standard btusb. Once that firmware is uploaded, the subver changes
 	 * to a different value.
 	 */
+#ifdef CONFIG_ARCH_BITMAIN
+	int err = 0;
+
+	if (!btrtl_dev->ic_info) {
+		rtl_dev_info(hdev, "assuming no firmware upload needed");
+		err = 0;
+		goto done;
+	}
+
+	switch (btrtl_dev->ic_info->lmp_subver) {
+	case RTL_ROM_LMP_8723A:
+	case RTL_ROM_LMP_3499:
+		err = btrtl_setup_rtl8723a(hdev, btrtl_dev);
+		break;
+	case RTL_ROM_LMP_8723B:
+	case RTL_ROM_LMP_8821A:
+	case RTL_ROM_LMP_8761A:
+	case RTL_ROM_LMP_8822B:
+	case RTL_ROM_LMP_8852A:
+	case RTL_ROM_LMP_8851B:
+		err = btrtl_setup_rtl8723b(hdev, btrtl_dev);
+		break;
+	default:
+		rtl_dev_info(hdev, "assuming no firmware upload needed");
+		break;
+	}
+done:
+	return err;
+#else
 	if (!btrtl_dev->ic_info) {
 		rtl_dev_info(hdev, "assuming no firmware upload needed");
 		return 0;
@@ -645,6 +701,7 @@ int btrtl_download_firmware(struct hci_dev *hdev,
 		rtl_dev_info(hdev, "assuming no firmware upload needed");
 		return 0;
 	}
+#endif
 }
 EXPORT_SYMBOL_GPL(btrtl_download_firmware);
 
@@ -815,3 +872,15 @@ MODULE_FIRMWARE("rtl_bt/rtl8821a_fw.bin");
 MODULE_FIRMWARE("rtl_bt/rtl8821a_config.bin");
 MODULE_FIRMWARE("rtl_bt/rtl8822b_fw.bin");
 MODULE_FIRMWARE("rtl_bt/rtl8822b_config.bin");
+#ifdef CONFIG_ARCH_BITMAIN
+MODULE_FIRMWARE("rtl_bt/rtl8723d_fw.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8723d_config.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8821c_fw.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8821c_config.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8822cu_fw.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8822cu_config.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8851bu_fw.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8851bu_config.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8852bu_fw.bin");
+MODULE_FIRMWARE("rtl_bt/rtl8852bu_config.bin");
+#endif
