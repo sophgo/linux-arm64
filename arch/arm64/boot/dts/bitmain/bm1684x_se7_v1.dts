@@ -145,6 +145,21 @@
 };
 
 &ethernet0 {
+	phy-handle = <&phy0>;
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy0: phy@0 {
+			rx-internal-delay-ps = <1050>;
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			led0_config = <0x0000>;
+			led1_config = <0x0007>;
+			led2_config = <0x19f0>;
+			reg = <0x0>;
+		};
+	};
 	eth-sophgo-config {
 		led = <0xae00>;
 		clkout = <0x0e02>;
@@ -152,13 +167,34 @@
 };
 
 &ethernet1 {
+	phy-handle = <&phy1>;
 	eth-sophgo-config {
 		led = <0xae00>;
 		clkout = <0x0e02>;
 	};
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy1: phy@1 {
+			rx-internal-delay-ps = <1350>;
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			led0_config = <0x0000>;
+			led1_config = <0x0007>;
+			led2_config = <0x19f0>;
+			reg = <0x0>;
+		};
+	};
 };
 
 &i2c0 {
+	/*
+	 * Prolong the I2C clock signal hold time to avoid incorrect recognition of
+	 * stop and start conditions. It is important to note that this value should
+	 * be modified accordingly when the I2C clock frequency is changed.
+	 */
+	i2c-sda-hold-time-ns = <900>;
 	hym8563: hym8563@51 {
 		compatible = "haoyu,hym8563";
 		reg = <0x51>;

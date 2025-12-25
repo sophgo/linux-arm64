@@ -722,13 +722,13 @@ static void ytphy_led_config(struct phy_device *phydev)
 	int led0_config, led1_config, led2_config;
 
 	if (of_property_read_u32(node, "led0_config", &led0_config))
-		led0_config = 0;
+		led0_config = 0x7;
 
 	if (of_property_read_u32(node, "led1_config", &led1_config))
-		led1_config = 0;
+		led1_config = 0x19f0;
 
 	if (of_property_read_u32(node, "led2_config", &led2_config))
-		led2_config = 0;
+		led2_config = 0x0;
 
 	ytphy_write_ext_with_lock(phydev, YTPHY_LED0_CONFIG_REG, led0_config);
 	ytphy_write_ext_with_lock(phydev, YTPHY_LED1_CONFIG_REG, led1_config);

@@ -47,11 +47,15 @@ static dma_addr_t des_paddr[VPP1686_CORE_MAX][VPP_CROP_NUM_MAX];
 static struct semaphore vpp_core_sem;
 static unsigned long vpp_idle_bit_map;
 
+int work_mask = 0x3;
+
 static void *vppbase_sys[VPP1686_CORE_MAX];
 
 static DECLARE_WAIT_QUEUE_HEAD(wq_vpp0);
 static DECLARE_WAIT_QUEUE_HEAD(wq_vpp1);
 static int got_event_vpp[VPP1686_CORE_MAX];
+
+module_param(work_mask, int, 0644);
 
 static struct vpp_statistic_info s_vpp_usage_info = {0};
 static struct task_struct *s_vpp_monitor_task;
@@ -602,18 +606,26 @@ static int bm1684x_vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *b
 		return ret;
 	}
 
+	spacc_lock();
+
 	ret = vpp_setup_desc(core_id, vdev, batch, des_paddr[core_id]);
 	if (ret < 0) {
 		dump_des(core_id, batch, pdes[core_id], des_paddr[core_id]);
+		spacc_unlock();
 		return ret;
 	}
 
 	atomic_inc(&s_vpp_usage_info.vpp_busy_status[core_id]);
-	if (core_id == 0)
+	if (core_id == 0) {
 		ret1 = wait_event_timeout(wq_vpp0, got_event_vpp[core_id], HZ);
-	else
+		s_vpp_usage_info.vpp_intcnt[0]++;
+	} else {
 		ret1 = wait_event_timeout(wq_vpp1, got_event_vpp[core_id], HZ);
+		s_vpp_usage_info.vpp_intcnt[1]++;
+	}
 	atomic_dec(&s_vpp_usage_info.vpp_busy_status[core_id]);
+
+	spacc_unlock();
 
 	if (ret1 == 0) {
 		pr_err("vpp wait_event_timeout! ret %d, core_id %d, pid %d, tgid %d, vpp_idle_bit_map %ld\n",
@@ -631,14 +643,30 @@ static int bm1684x_vpp_handle_setup(struct bm_vpp_dev *vdev, struct vpp_batch *b
 static int bm1684x_vpp_setup(struct bm_vpp_dev *vdev, struct vpp_batch *batch, struct vpp_batch *batch_tmp)
 {
 	int ret = VPP_OK, core_id = -1;
+
+	if (work_mask & 0x10) {
+		down(&vpp_core_sem);
+		work_mask &= (~(1 << 4));
+	} else if (work_mask & 0x20) {
+		up(&vpp_core_sem);
+		work_mask &= (~(1 << 5));
+	}
+
 	if (down_interruptible(&vpp_core_sem)) {
 		//pr_err("bm1684x vpp down_interruptible was interrupted\n");
 		return VPP_ERESTARTSYS;
 	}
 
-	ret = vpp_get_core_id(&core_id);
-	if (ret != VPP_OK)
-		goto up_sem;
+	if ((work_mask & 0x3) != 0x3) {
+		if (work_mask & 0x1)
+			core_id = 0;
+		else
+			core_id = 1;
+	} else {
+		ret = vpp_get_core_id(&core_id);
+		if (ret != VPP_OK)
+			goto up_sem;
+	}
 
 #if defined CLOCK_GATE
 	/* vpp0/1 top reset */
@@ -763,14 +791,14 @@ static ssize_t info_read(struct file *file, char __user *buf, size_t size, loff_
 	sprintf(dat + len, "\"core\" : [\n");
 	for (i = 0; i < VPP_CORE_MAX - 1; i++) {
 		len = strlen(dat);
-		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}]\n",
+		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}, \"intcnt\":%d]\n",
 			i, s_vpp_usage_info.vpp_core_usage[i], s_vpp_usage_info.vpp_working_time_in_ms[i]*100/
-			s_vpp_usage_info.vpp_total_time_in_ms[i]);
+			s_vpp_usage_info.vpp_total_time_in_ms[i], s_vpp_usage_info.vpp_intcnt[i]);
 	}
 	len = strlen(dat);
-		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}]\n",
+		sprintf(dat + len, "[{\"id\":%d, \"usage(short|long)\":%d%%|%llu%%}, \"intcnt\":%d]\n",
 			i, s_vpp_usage_info.vpp_core_usage[i], s_vpp_usage_info.vpp_working_time_in_ms[i]*100/
-			s_vpp_usage_info.vpp_total_time_in_ms[i]);
+			s_vpp_usage_info.vpp_total_time_in_ms[i], s_vpp_usage_info.vpp_intcnt[i]);
 
 	len = strlen(dat);
 	sprintf(dat + len, "\n");
@@ -988,6 +1016,8 @@ static int bm_vpp_probe(struct platform_device *pdev)
 	entry = proc_create("vppinfo", 0, NULL, &proc_info_operations);
 	vpp_soft_rst(0);
 	vpp_soft_rst(1);
+	s_vpp_usage_info.vpp_intcnt[0] = 0;
+	s_vpp_usage_info.vpp_intcnt[1] = 0;
 	return 0;
 }
 
