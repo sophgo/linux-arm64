@@ -1,0 +1,298 @@
+#include "bm1684x.dtsi"
+#include "bm1684x_mm_16g.dtsi"
+#include "bm1684x_evb.dtsi"
+
+/ {
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+	};
+
+	/delete-node/ pka@58008000;
+	/delete-node/ clp890@50018000;
+	info {
+		file-name = "bm1684x_sm7_cust_v3.dtb";
+	};
+	gpioleds: gpio-leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fan1_release>;
+		//pinctrl-0 = <&dbgi2c_release &fan1_release &jtag0_release>;
+		status = "okay";
+
+		led1 {	// bottom
+			label = "led1";
+			gpios = <&port0a 29 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+		};
+
+		led2 {
+			label = "led2";
+			gpios = <&port2a 14 GPIO_ACTIVE_HIGH>; /* FAN1 / GPIO78 */
+			//linux,default-trigger = "heartbeat";
+			default-state = "off";
+		};
+
+		led3 {	// top
+			label = "led3";
+			gpios = <&port0a 18 GPIO_ACTIVE_HIGH>;
+			//linux,default-trigger = "heartbeat";
+			default-state = "off";
+		};
+	};
+/*
+ * PCIe USB tree:
+ * BM1684X
+ *     |----VL805(PCIE2USB)
+ *             |--------VL716(USB2SATA)
+ *             |--------GL3523(USBHUB)
+ *                         |--------USB slot x2
+ *                         |--------4G/5G
+ *                         |--------WiFi
+ */
+	bsl_gpio: bsl-gpio {
+		status = "okay";
+		compatible = "bsl_gpio";
+		pinctrl-names = "default";
+		pinctrl-0 = <&dbgi2c_release &jtag0_release &jtag1_release &i2c2_release>;
+
+		gps_pwr {
+			gpio_num-gpio = <&port0a 26 GPIO_ACTIVE_HIGH>;
+			gpio_function = <0>;	// output active
+		};
+
+		// pcie -> usb
+		pcie2usb_rst {
+			gpio_num-gpio = <&port0a 9 GPIO_ACTIVE_HIGH>;
+			gpio_function = <5>;	// output reset
+			reset_time_ms = <0 0 0>;//<0 0 1000>;
+		};
+		pcie_clk_en {
+			gpio_num-gpio = <&port0a 22 GPIO_ACTIVE_LOW>;
+			gpio_function = <0>;	// output active
+		};
+
+		// usb -> sata
+		usb2sata_pwr {
+			gpio_num-gpio = <&port0a 6 GPIO_ACTIVE_HIGH>;
+			gpio_function = <0>;	// output active
+		};
+		usb2sata_rst {
+			gpio_num-gpio = <&port0a 5 GPIO_ACTIVE_HIGH>;
+			gpio_function = <5>;	// output reset
+			reset_time_ms = <0 0 0>;//<0 0 2000>;
+		};
+		sata_pwr {
+			gpio_num-gpio = <&port0a 7 GPIO_ACTIVE_HIGH>;
+			gpio_function = <0>;	// output active
+		};
+
+		// usb hub
+		hub_pwr {
+			gpio_num-gpio = <&port0a 20 GPIO_ACTIVE_HIGH>;
+			gpio_function = <0>;	// output active
+		};
+		hub_rst {
+			gpio_num-gpio = <&port0a 23 GPIO_ACTIVE_HIGH>;
+			gpio_function = <5>;	// output reset
+			reset_time_ms = <0 0 0>;//<0 1000 3000>;
+		};
+
+		// usb slot
+		// we use power ctrl as RESET
+		usb_rst {
+			gpio_num-gpio = <&port0a 10 GPIO_ACTIVE_LOW>;
+			gpio_function = <5>;	// output reset
+			reset_time_ms = <0 0 0>;//<0 4000 6000>;
+		};
+
+		// 4G/5G
+		// we use power ctrl as RESET
+		modem_rst {
+			gpio_num-gpio = <&port0a 19 GPIO_ACTIVE_LOW>;
+			gpio_function = <5>;	// output reset
+			reset_time_ms = <0 0 0>;//<0 4000 6000>;
+		};
+
+		// wifi
+		wlan_pwr {
+			gpio_num-gpio = <&port0a 30 GPIO_ACTIVE_HIGH>;
+			gpio_function = <0>;	// output active
+		};
+		wlan_rst {
+			gpio_num-gpio = <&port2a 20 GPIO_ACTIVE_LOW>;
+			gpio_function = <5>;	// output reset
+			reset_time_ms = <0 0 0>;//<0 4000 6000>;
+		};
+	};
+};
+&pcie0 {
+	pwr-gpio = <&port0a 11 GPIO_ACTIVE_HIGH>;
+};
+
+&tmp451 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+&i2c1 {
+	bsl_tmp: bsl_tmp@7f {
+		compatible = "bsl,tempsensor";
+		reg = <0x7f>;
+		#thermal-sensor-cells = <1>;
+		mcu = <&bm16xxmcu>;
+	};
+};
+
+&thermal_zones {
+	soc {
+		thermal-sensors = <&bsl_tmp 1>;
+	};
+	board {
+		thermal-sensors = <&bsl_tmp 0>;
+	};
+};
+
+&pwm{
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_acquire>;
+};
+
+&soc_pwmfan_trip1 {
+	temperature = <30000>;
+};
+
+&soc_pwmfan_trip2 {
+	temperature = <40000>;
+};
+
+&soc_pwmfan_trip3 {
+	temperature = <50000>;
+};
+
+&soc_pwmfan_trip4 {
+	temperature = <60000>;
+};
+
+&soc_tpuclk440m_trip {
+	temperature = <85000>;
+};
+
+&soc_tpuclk75m_trip {
+	temperature = <90000>;
+};
+
+&soc_crit_trip {
+	temperature = <95000>;
+};
+
+&vpu_reserved {
+	reg = <0x3 0x40000000 0x0 0x08000000>; // 128M, for VPU firmware
+	no-map;
+};
+
+&ion_for_vpu {
+			compatible = "vpu-region";
+			reg = <0x3 0x48000000 0x0 0xb7ff0000>; // 2.875G
+};
+
+&ion_for_npu {
+			compatible = "npu-region";
+			reg = <0x1 0x24100000 0x0 0x96e00000>; // 2.5g
+};
+&clock_init {
+	clock-rates = \
+		<2300000000>, <950000000>, <800000000>,
+
+		<1000000000>, <1000000000>,
+		<2000000000>, <50000000>,
+		<100000000>, <100000000>,
+		<125000000>, <50000000>,
+		<25000000>, <125000000>,
+		<50000000>, <25000000>,
+		<500000000>, <25000000>,
+		<1000000000>, <500000000>,
+		<800000000>, <100000000>,
+		<250000000>, <250000000>,
+		<500000000>, <500000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<50000000>, <50000000>,
+		<100000>, <100000>, <100000>,
+
+		<1000000001>,
+		<800000000>, <800000001>,
+		<2300000001>, <575000000>;
+		};
+
+&uart1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_acquire>;
+};
+
+&ethernet0 {
+	//max-speed = <100>;
+	phy-handle = <&phy0>;
+
+	snps,reset-gpio = <&port0a 28 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	/* Reset time is 20ms, 100ms for rtl8211f */
+	snps,reset-delays-us = <0 20000 100000>;
+
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy0: phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			reg = <0x0>;
+
+			rx-internal-delay-ps = <150>;
+			motorcomm,rx-clk-drv-microamp = <3970>;
+			motorcomm,rx-data-drv-microamp = <3970>;
+			led0_config = <0x0070>;
+			led1_config = <0x0000>;
+			led2_config = <0x2600>;
+		};
+	};
+};
+
+&ethernet1 {
+	phy-handle = <&phy1>;
+
+	snps,reset-gpio = <&port0a 31 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	/* Reset time is 20ms, 100ms for rtl8211f */
+	snps,reset-delays-us = <0 20000 100000>;
+
+	//pinctrl-names = "default";
+	//pinctrl-0 = <&dbgi2c_release>;
+
+	//max-speed = <100>;
+
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy1: phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			reg = <0x0>;
+
+			rx-internal-delay-ps = <150>;
+			motorcomm,rx-clk-drv-microamp = <3970>;
+			motorcomm,rx-data-drv-microamp = <3970>;
+			led0_config = <0x0070>;
+			led1_config = <0x0000>;
+			led2_config = <0x2600>;
+		};
+	};
+};

@@ -38,7 +38,7 @@
 		};
 	};
 
-	bm16xxmcu@17 {
+	bm16xxmcu: bm16xxmcu@17 {
 		compatible = "bitmain,bm16xx-mcu";
 		reg = <0x17>;
 

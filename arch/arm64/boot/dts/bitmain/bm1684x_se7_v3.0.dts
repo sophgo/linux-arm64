@@ -1,0 +1,128 @@
+#include "bm1684x_sm7m_v1.0.dts"
+
+/ {
+	info {
+		file-name = "bm1684x_se7_v3.0.dtb";
+	};
+
+	gpioleds: gpio-leds {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		run_led {
+			label = "RUN_STATUS";
+			gpios = <&port6416 3 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+		};
+
+		wifi_en {
+			label = "WIFI_EN";
+			gpios = <&port6416 1 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		lte_en {
+			label = "LTE_EN";
+			gpios = <&port6416 8 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		5g_rst {
+			label = "5G_RST";
+			gpios = <&port6416 10 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		5g_en {
+			label = "5G_EN";
+			gpios = <&port6416 12 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		out1 {
+			label = "OUT1";
+			gpios = <&port6416 13 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		out2 {
+			label = "OUT2";
+			gpios = <&port6416 14 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		usb20_en {
+			label = "USB20_EN";
+			gpios = <&port6416 15 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+};
+
+&i2c1 {
+	/delete-node/ rtc@68;
+
+	port6416: tca6416@6c {
+		compatible = "ti,tca6416";
+		reg = <0x6c>;
+		gpio-controller;
+		#gpio-cells = <2>;
+	};
+};
+
+&pcie0 {
+	pcie_irq_enable;
+};
+
+&i2c2 {
+	pinctrl-names = "default", "dbgi2c";
+	pinctrl-0 = <&i2c2_acquire &dbgi2c_release>;
+
+	rtc@68 {
+		compatible = "dallas,ds1307";
+		reg = <0x68>;
+	};
+};
+
+&ethernet0 {
+	phy-handle = <&phy0>;
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy0: phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			reg = <0x0>;
+
+			rx-internal-delay-ps = <750>;
+			motorcomm,rx-clk-drv-microamp = <2910>;
+			motorcomm,rx-data-drv-microamp = <2910>;
+			led0_config = <0x19f0>;
+			led1_config = <0x0007>;
+			led2_config = <0x0>;
+		};
+	};
+};
+
+&ethernet1 {
+	phy-handle = <&phy1>;
+	mdio {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+		compatible = "snps,dwmac-mdio";
+		phy1: phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			device_type = "ethernet-phy";
+			reg = <0x0>;
+
+			rx-internal-delay-ps = <1200>;
+			motorcomm,rx-clk-drv-microamp = <2910>;
+			motorcomm,rx-data-drv-microamp = <2910>;
+			led0_config = <0x19f0>;
+			led1_config = <0x0007>;
+			led2_config = <0x0>;
+		};
+	};
+};

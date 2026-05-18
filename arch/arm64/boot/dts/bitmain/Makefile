@@ -28,4 +28,6 @@ dtb-$(CONFIG_ARCH_BM1684) += bm1684_evb_v1.2.dtb \
 				bm1684x_sm7_airbox.dtb \
 				bm1684x_m2_cust02_v0.0.dtb \
 				bm1684x_sm7_cust_v1.dtb \
-				bm1684x_sm7_cust_v2.dtb
+				bm1684x_sm7_cust_v2.dtb \
+				bm1684x_sm7_cust_v3.dtb \
+				bm1684x_se7_v3.0.dtb
