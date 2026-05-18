@@ -2722,8 +2722,13 @@ static unsigned hub_is_wusb(struct usb_hub *hub)
 #define HUB_ROOT_RESET_TIME	60	/* times are in msec */
 #define HUB_SHORT_RESET_TIME	10
 #define HUB_BH_RESET_TIME	50
+#ifdef ARCH_BITMAIN
+#define HUB_LONG_RESET_TIME	2000
+#define HUB_RESET_TIMEOUT	8000
+#else
 #define HUB_LONG_RESET_TIME	200
 #define HUB_RESET_TIMEOUT	800
+#endif
 
 /*
  * "New scheme" enumeration causes an extra state transition to be

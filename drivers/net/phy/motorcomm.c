@@ -660,6 +660,31 @@ err_dts_val:
 	return dflt;
 }
 
+#ifdef CONFIG_ARCH_BITMAIN
+static int read_chip_type(void)
+{
+	void *paddr;
+	int efuse_bit1_addr = 0x57, efuse_bit2_addr = 0x58;
+	int efuse_bit1_res = 0, efuse_bit2_res = 0;
+	unsigned int efuse_base = 0x50028010;
+	int res;
+
+	paddr = ioremap(efuse_base, 0x10);
+
+	iowrite32(efuse_bit1_addr - 2, paddr);
+	efuse_bit1_res = ioread32(paddr + 0x4);
+
+	iowrite32(efuse_bit2_addr - 2, paddr);
+	efuse_bit2_res = ioread32(paddr + 0x4);
+
+	iounmap(paddr);
+
+	res = (efuse_bit1_res | efuse_bit2_res) & 0x1;
+
+	return res;
+}
+#endif
+
 static int ytphy_rgmii_clk_delay_config(struct phy_device *phydev)
 {
 	int tb_size = ARRAY_SIZE(ytphy_rgmii_delays);
@@ -675,6 +700,13 @@ static int ytphy_rgmii_clk_delay_config(struct phy_device *phydev)
 	tx_reg = ytphy_get_delay_reg_value(phydev, "tx-internal-delay-ps",
 					   ytphy_rgmii_delays, tb_size, NULL,
 					   YT8521_RC1R_RGMII_1_950_NS);
+
+#ifdef CONFIG_ARCH_BITMAIN
+	if (read_chip_type()) {
+		rx_reg = 5;
+		pr_info("YT phy rxdelay change to: 0x%x\n", rx_reg);
+	}
+#endif
 
 	switch (phydev->interface) {
 	case PHY_INTERFACE_MODE_RGMII:
@@ -722,13 +754,13 @@ static void ytphy_led_config(struct phy_device *phydev)
 	int led0_config, led1_config, led2_config;
 
 	if (of_property_read_u32(node, "led0_config", &led0_config))
-		led0_config = 0;
+		led0_config = 0x7;
 
 	if (of_property_read_u32(node, "led1_config", &led1_config))
-		led1_config = 0;
+		led1_config = 0x19f0;
 
 	if (of_property_read_u32(node, "led2_config", &led2_config))
-		led2_config = 0;
+		led2_config = 0x0;
 
 	ytphy_write_ext_with_lock(phydev, YTPHY_LED0_CONFIG_REG, led0_config);
 	ytphy_write_ext_with_lock(phydev, YTPHY_LED1_CONFIG_REG, led1_config);

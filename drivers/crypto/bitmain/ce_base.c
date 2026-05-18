@@ -1,13 +1,12 @@
 #include <ce_port.h>
 #include <ce.h>
 #include <ce_inst.h>
-
-#include <linux/rwlock.h>
 #include <linux/rwsem.h>
-#include <linux/mutex.h>
-#include <../../soc/bitmain/vpp/vpp_platform.h>
+#include <linux/sched/signal.h>
 
 #define CE_BASE_TFM_MAX		24
+
+DECLARE_RWSEM(spacc_rwlock);
 
 struct ce_base_device;
 
@@ -118,6 +117,63 @@ static void ce_base_free_request(struct crypto_async_request *creq)
 	spin_unlock_irqrestore(&ce_base_dev->lock, flag);
 }
 
+void spacc_hwlock_lock(void)
+{
+	void __iomem *vaddr;
+	unsigned int hwlock_base = 0x50010048;
+
+	vaddr = ioremap(hwlock_base, 0x4);
+	while (ioread32(vaddr))
+		;
+
+	iounmap(vaddr);
+}
+
+void spacc_hwlock_unlock(void)
+{
+	void __iomem *vaddr;
+	unsigned int hwlock_base = 0x50010048;
+
+	vaddr = ioremap(hwlock_base, 0x4);
+	iowrite32(0, vaddr);
+
+	iounmap(vaddr);
+}
+
+void spacc_lock(void)
+{
+	down_read(&spacc_rwlock);
+}
+EXPORT_SYMBOL(spacc_lock);
+
+void spacc_unlock(void)
+{
+	up_read(&spacc_rwlock);
+}
+EXPORT_SYMBOL(spacc_unlock);
+
+int down_write_timeout(struct rw_semaphore *sem, unsigned long timeout_ms)
+{
+	unsigned long timeout = jiffies + msecs_to_jiffies(timeout_ms);
+
+	while (1) {
+		if (down_write_trylock(sem))
+			return 0;
+
+		if (time_after_eq(jiffies, timeout)) {
+			ce_err("spacc down_write timeout: %lu ms\n", timeout_ms);
+			return -ETIMEDOUT;
+		}
+
+		if (signal_pending(current)) {
+			ce_err("spacc down_write signal_pending\n");
+			return -ERESTARTSYS;
+		}
+
+		schedule_timeout_uninterruptible(usecs_to_jiffies(10));
+	}
+}
+
 static int ce_base_ioc_func_op_phy(struct ce_base_device *ce_base_dev,
 				   unsigned long arg)
 {
@@ -162,12 +218,17 @@ static int ce_base_ioc_func_op_phy(struct ce_base_device *ce_base_dev,
 	ce_base_op->len = ce_base_ioc_op_phy.len;
 	ce_base_op->dstlen = ce_base_ioc_op_phy.dstlen;
 
-	down_write(&my_rwlock);
+	err = down_write_timeout(&spacc_rwlock, 20000);
+	if (err != 0)
+		goto err0;
+	spacc_hwlock_lock();
 
 	err = ce_inst_enqueue_request(inst, creq);
 	if (err != -EINPROGRESS) {
 		/* success insert request to queue */
 		ce_err("cannot insert request to queue\n");
+		spacc_hwlock_unlock();
+		up_write(&spacc_rwlock);
 		goto err0;
 	}
 
@@ -176,7 +237,8 @@ static int ce_base_ioc_func_op_phy(struct ce_base_device *ce_base_dev,
 	/* we never use this completion again, just init it every transaction */
 	/* reinit_completion(&ce_base_tfm->comp); */
 
-	up_write(&my_rwlock);
+	spacc_hwlock_unlock();
+	up_write(&spacc_rwlock);
 
 	err = ce_base_tfm->err;
 err0:

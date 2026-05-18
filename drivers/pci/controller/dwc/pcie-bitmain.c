@@ -51,6 +51,7 @@ struct bm168x_pcie {
 	void __iomem *apb_base; /* snps apb base */
 	void __iomem *top_apb_base; /* bm168x top apb base */
 	int reset_gpio;
+	int pwr_gpio;
 };
 
 static int bm168x_pcie_reset(struct bm168x_pcie *bm168x_pcie, unsigned int ms)
@@ -388,6 +389,18 @@ static int bm168x_pcie_probe(struct platform_device *pdev)
 		dev_err(dev, "couldn't remap apb base %p\n", top_apb_base);
 		ret = PTR_ERR(bm168x_pcie->top_apb_base);
 		return ret;
+	}
+
+	bm168x_pcie->pwr_gpio = of_get_named_gpio(dev->of_node, "pwr-gpio", 0);
+	if (bm168x_pcie->pwr_gpio < 0) {
+		dev_err(dev, "could not get pcie pwr gpio\n");
+		//return -1;
+	} else {
+		ret = gpio_request_one(bm168x_pcie->pwr_gpio, GPIOF_OUT_INIT_HIGH, "pcie-pwr");
+		if (ret) {
+			dev_err(dev, "could not request pcie pwr gpio %d failed!\n", bm168x_pcie->pwr_gpio);
+			//return ret;
+		}
 	}
 
 	bm168x_pcie->reset_gpio = of_get_named_gpio(dev->of_node, "reset-gpio", 0);

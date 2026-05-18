@@ -451,6 +451,25 @@ const struct mcu_features mcu_list[] = {
 		},
 	},
 	{
+		0x3d, "SM7 CUSTV3", "BM1684X", "CW32",
+		0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x08, 0x0a, 0x0b, 0x60,
+		0x24, -1, -1, -1, MCU_REG_CRITICAL_ACTIONS,
+		MCU_REG_CRITICAL_TEMP, MCU_REG_REPOWERON_TEMP,
+		MCU_REG_KEEP_DDR_POWERON,
+		{
+			"SoC overheat",
+			"Power supply overheat",
+			"Board overheat",
+			"Board overheat and shutdown",
+			"SoC overheat and shutdown",
+			"Power supply failure",
+			"12V power supply failure",
+			"SoC required reboot",
+			"Watchdog",
+			"Testing mode",
+		},
+	},
+	{
 		0x40, "SE8 CTRL", "BM1684X", "STM32",
 		0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x08, 0x0a, 0x0b, 0x60,
 		0x24, -1,  -1, -1, MCU_REG_CRITICAL_ACTIONS,
@@ -473,6 +492,25 @@ const struct mcu_features mcu_list[] = {
 		0x3b, "SM7 CUSTV2", "BM1684X", "STM32",
 		0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x08, 0x0a, 0x0b, 0x60,
 		0x24, -1, -1, -1, MCU_REG_CRITICAL_ACTIONS,
+		MCU_REG_CRITICAL_TEMP, MCU_REG_REPOWERON_TEMP,
+		MCU_REG_KEEP_DDR_POWERON,
+		{
+			"SoC overheat",
+			"Power supply overheat",
+			"Board overheat",
+			"Board overheat and shutdown",
+			"SoC overheat and shutdown",
+			"Power supply failure",
+			"12V power supply failure",
+			"SoC required reboot",
+			"Watchdog",
+			"Testing mode",
+		},
+	},
+	{
+		0x41, "SE7 V3_0", "BM1684X", "STM32",
+		0x00, 0x01, 0x02, 0x04, 0x05, 0x06, 0x08, 0x0a, 0x0b, 0x60,
+		0x24, -1,  0x3d, 0x61, MCU_REG_CRITICAL_ACTIONS,
 		MCU_REG_CRITICAL_TEMP, MCU_REG_REPOWERON_TEMP,
 		MCU_REG_KEEP_DDR_POWERON,
 		{
@@ -1336,6 +1374,33 @@ static int sub_probe(struct i2c_client *i2c,
 	i2c_set_clientdata(i2c, ctx);
 	return 0;
 }
+
+int mcu_get_temperature_ext(struct i2c_client *i2c, int ch, long *val)
+{
+	int ret;
+
+	if (!i2c)
+		return -1;
+
+	if (ch == 0)
+		ret = mcu_i2c_read_byte(i2c, 5);
+	else if (ch == 1)
+		ret = mcu_i2c_read_byte(i2c, 4);
+	else
+		ret = -EINVAL;
+
+	if (ret < 0)
+		return ret;
+
+	if (val) {
+		if (ret > 127)
+			ret -= 256;
+		*val = ret;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(mcu_get_temperature_ext);
 
 static int mcu_i2c_probe(struct i2c_client *i2c,
 			const struct i2c_device_id *ignored)
